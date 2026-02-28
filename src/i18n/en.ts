@@ -1,0 +1,85 @@
+/**
+ * ULWILA Color Score Editor — English translations
+ */
+
+import type { Translations } from "./types";
+
+export const en: Translations = {
+  toolbar: {
+    untitledScore: "Untitled Score",
+    scoreTitle: "Score title",
+    timeSignature: "Time signature",
+    clef: "Clef",
+    treble: "Treble",
+    bass: "Bass",
+    staff: "Staff",
+    circles: "Circles",
+    staffMode: "Staff mode",
+    circlesMode: "Circles mode",
+    renderingMode: "Rendering mode",
+    exportPdf: "Export to PDF",
+    exportPng: "Export to PNG",
+    exportSvg: "Export to SVG",
+    save: "Save",
+    load: "Load",
+    saveScore: "Save score",
+    loadScore: "Load score",
+    loadScoreFile: "Load score file input",
+    language: "Language",
+  },
+  noteInput: {
+    addNote: "Add Note",
+    addRest: "Add Rest",
+    addNoteAria: "Add note to score",
+    addRestAria: "Add rest to score",
+    duration: "Duration:",
+    durationSelector: "Duration selector",
+    octave: "Octave:",
+    octaveSelector: "Octave selector",
+    accented: "Accented",
+    toggleAccented: "Toggle accented (sharp)",
+  },
+  noteEditor: {
+    editNote: "Edit Note",
+    editRest: "Edit Rest",
+    noNoteSelected: "No note selected",
+    pitchSelector: "Pitch selector",
+    duration: "Duration",
+    durationSelector: "Duration selector",
+    octave: "Octave",
+    octaveSelector: "Octave selector",
+    setPitchTo: "Set pitch to",
+    delete: "Delete",
+    deleteNote: "Delete note",
+  },
+  lyrics: {
+    lyric: "Lyric",
+    syllable: "Syllable",
+    enterLyric: "Enter lyric...",
+    lyricInput: "Lyric input",
+  },
+  durations: {
+    whole: "Whole",
+    half: "Half",
+    quarter: "Quarter",
+    eighth: "Eighth",
+    sixteenth: "Sixteenth",
+  },
+  octaves: {
+    lower: "Lower",
+    middle: "Middle",
+    upper: "Upper",
+  },
+  noteLabels: {
+    C: "C (Do)",
+    D: "D (Ré)",
+    E: "E (Mi)",
+    F: "F (Fa)",
+    G: "G (Sol)",
+    A: "A (La)",
+    H: "H (Si)",
+  },
+  export: {
+    untitledScore: "Untitled Score",
+  },
+};

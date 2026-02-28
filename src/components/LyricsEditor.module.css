@@ -1,0 +1,64 @@
+/**
+ * ULWILA Color Score Editor - Lyrics Editor Styles
+ *
+ * Compact panel for attaching lyrics (syllables) to notes.
+ */
+
+.lyricsEditor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 1rem;
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+.heading {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #333;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.controlGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.controlLabel {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #333;
+}
+
+.lyricInput {
+  padding: 0.5rem 0.75rem;
+  min-width: 44px;
+  min-height: 44px;
+  border: 2px solid #ccc;
+  border-radius: 4px;
+  background: white;
+  color: #333;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.lyricInput:hover:not(:disabled) {
+  border-color: #999;
+}
+
+.lyricInput:focus {
+  border-color: #0066cc;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
+}
+
+.lyricInput:disabled {
+  background: #eee;
+  color: #999;
+  cursor: not-allowed;
+}

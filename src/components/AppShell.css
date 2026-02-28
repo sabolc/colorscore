@@ -1,0 +1,63 @@
+.app-shell {
+  display: grid;
+  height: 100vh;
+  width: 100vw;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto auto auto 1fr;
+  grid-template-areas:
+    "toolbar"
+    "note-input"
+    "editor"
+    "score-canvas";
+  gap: 0;
+}
+
+.toolbar-slot {
+  grid-area: toolbar;
+  background-color: var(--color-toolbar-bg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.note-input-panel {
+  grid-area: note-input;
+  background-color: var(--color-panel-bg);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--spacing-md);
+  overflow-y: auto;
+}
+
+.editor-panel {
+  grid-area: editor;
+  background-color: var(--color-panel-bg);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--spacing-md);
+  overflow-y: auto;
+}
+
+.score-canvas-slot {
+  grid-area: score-canvas;
+  background-color: var(--color-score-bg);
+  overflow: auto;
+}
+
+/* Desktop layout: >=1024px side-by-side */
+@media (min-width: 1024px) {
+  .app-shell {
+    grid-template-columns: 300px 1fr;
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+      "toolbar toolbar"
+      "note-input score-canvas"
+      "editor score-canvas";
+  }
+
+  .note-input-panel {
+    border-bottom: none;
+    border-right: 1px solid var(--color-border);
+  }
+
+  .editor-panel {
+    border-bottom: none;
+    border-right: 1px solid var(--color-border);
+  }
+}

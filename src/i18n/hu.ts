@@ -1,0 +1,85 @@
+/**
+ * ULWILA Color Score Editor — Hungarian translations (Magyar)
+ */
+
+import type { Translations } from "./types";
+
+export const hu: Translations = {
+  toolbar: {
+    untitledScore: "Névtelen kotta",
+    scoreTitle: "Kotta címe",
+    timeSignature: "Ütemmutató",
+    clef: "Kulcs",
+    treble: "Violinkulcs",
+    bass: "Basszuskulcs",
+    staff: "Kotta",
+    circles: "Körök",
+    staffMode: "Kotta nézet",
+    circlesMode: "Körök nézet",
+    renderingMode: "Megjelenítés",
+    exportPdf: "Exportálás PDF-be",
+    exportPng: "Exportálás PNG-be",
+    exportSvg: "Exportálás SVG-be",
+    save: "Mentés",
+    load: "Betöltés",
+    saveScore: "Kotta mentése",
+    loadScore: "Kotta betöltése",
+    loadScoreFile: "Kotta fájl betöltése",
+    language: "Nyelv",
+  },
+  noteInput: {
+    addNote: "Hang hozzáadása",
+    addRest: "Szünet hozzáadása",
+    addNoteAria: "Hang hozzáadása a kottához",
+    addRestAria: "Szünet hozzáadása a kottához",
+    duration: "Időtartam:",
+    durationSelector: "Időtartam választó",
+    octave: "Oktáv:",
+    octaveSelector: "Oktáv választó",
+    accented: "Módosított",
+    toggleAccented: "Módosított hang (kereszt) be/ki",
+  },
+  noteEditor: {
+    editNote: "Hang szerkesztése",
+    editRest: "Szünet szerkesztése",
+    noNoteSelected: "Nincs kiválasztva hang",
+    pitchSelector: "Hangmagasság választó",
+    duration: "Időtartam",
+    durationSelector: "Időtartam választó",
+    octave: "Oktáv",
+    octaveSelector: "Oktáv választó",
+    setPitchTo: "Hangmagasság beállítása",
+    delete: "Törlés",
+    deleteNote: "Hang törlése",
+  },
+  lyrics: {
+    lyric: "Dalszöveg",
+    syllable: "Szótag",
+    enterLyric: "Szótag írása...",
+    lyricInput: "Dalszöveg bevitel",
+  },
+  durations: {
+    whole: "Egész",
+    half: "Fél",
+    quarter: "Negyed",
+    eighth: "Nyolcad",
+    sixteenth: "Tizenhatod",
+  },
+  octaves: {
+    lower: "Alsó",
+    middle: "Közép",
+    upper: "Felső",
+  },
+  noteLabels: {
+    C: "C (Dó)",
+    D: "D (Ré)",
+    E: "E (Mi)",
+    F: "F (Fá)",
+    G: "G (Szó)",
+    A: "A (Lá)",
+    H: "H (Ti)",
+  },
+  export: {
+    untitledScore: "Névtelen kotta",
+  },
+};

@@ -1,0 +1,7 @@
+.scoreCanvas {
+  background-color: var(--color-score-bg, #fafafa);
+  width: 100%;
+  min-height: 300px;
+  padding: 1rem;
+  box-sizing: border-box;
+}

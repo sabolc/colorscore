@@ -1,0 +1,179 @@
+/**
+ * ULWILA Color Score Editor - Note Editor Styles
+ *
+ * Compact panel for editing selected note properties.
+ */
+
+.noteEditor {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+.heading {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #333;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.placeholder {
+  padding: 1rem;
+  color: #999;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+/* Pitch Section */
+.pitchSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.currentPitch {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.pitchIndicator {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+}
+
+.pitchButtons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.pitchButton {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  color: white;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.pitchButton:hover:not(:disabled) {
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.pitchButton:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.pitchButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pitchButton.activePitch {
+  border-color: #0066cc;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.3);
+}
+
+/* H button needs dark border for visibility against yellow */
+.hButton {
+  border-color: #333 !important;
+  color: #333 !important;
+  text-shadow: none !important;
+}
+
+.hButton.activePitch {
+  border-color: #0066cc !important;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.3);
+}
+
+.hButton:disabled {
+  border-color: #999 !important;
+}
+
+/* Control Groups */
+.controlGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.controlLabel {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #333;
+}
+
+/* Duration and Octave Selectors */
+.selectControl {
+  padding: 0.5rem 0.75rem;
+  min-width: 44px;
+  min-height: 44px;
+  border: 2px solid #ccc;
+  border-radius: 4px;
+  background: white;
+  color: #333;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.selectControl:hover:not(:disabled) {
+  border-color: #999;
+}
+
+.selectControl:focus {
+  border-color: #0066cc;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
+}
+
+.selectControl:disabled {
+  background: #eee;
+  color: #999;
+  cursor: not-allowed;
+}
+
+/* Delete Button */
+.deleteButton {
+  padding: 0.75rem 1.5rem;
+  min-width: 44px;
+  min-height: 44px;
+  border: none;
+  border-radius: 4px;
+  background: #dc2626;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 0.5rem;
+}
+
+.deleteButton:hover {
+  background: #b91c1c;
+}
+
+.deleteButton:active {
+  transform: scale(0.98);
+}
