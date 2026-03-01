@@ -220,10 +220,8 @@ export function scoreReducer(state: Score, action: ScoreAction): Score {
       const note = part.notes[noteIndex];
       if (!note) return state;
 
-      const updated = { ...note, lineBreakAfter: !note.lineBreakAfter };
-      if (!updated.lineBreakAfter) {
-        delete updated.lineBreakAfter;
-      }
+      const newValue = !note.lineBreakAfter;
+      const updated = { ...note, lineBreakAfter: newValue || undefined };
 
       const newNotes = [...part.notes];
       newNotes[noteIndex] = updated;
