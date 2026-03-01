@@ -161,6 +161,15 @@ export function computeCirclesLayout(
       currentRow.push(circleLayout);
       currentX += totalWidth;
     }
+
+    // Force line break if the note has lineBreakAfter set
+    if (note.lineBreakAfter) {
+      rows.push({ startY: currentRowY, circles: currentRow });
+      currentRow = [];
+      currentRowY += fullConfig.rowSpacing;
+      currentX = fullConfig.marginLeft + baseRadius;
+      continue;
+    }
   }
 
   // Push the final row if it has content

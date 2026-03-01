@@ -137,7 +137,7 @@ export function computeLayout(score: Score, config?: Partial<LayoutConfig>): Sta
   // For 6/8: 6 * (4/8) = 3 quarter-note beats per measure.
   const beatsPerMeasure = score.timeSignature.beats * (4 / score.timeSignature.beatValue);
 
-  allNotes.forEach(({ note, partIndex, noteIndex }) => {
+  for (const { note, partIndex, noteIndex } of allNotes) {
     const isRest = note.type === "rest";
 
     // Calculate Y position
@@ -171,6 +171,20 @@ export function computeLayout(score: Score, config?: Partial<LayoutConfig>): Sta
       currentBeats = 0;
     }
 
+    // Force line break if the note has lineBreakAfter set
+    if (note.lineBreakAfter) {
+      systems.push(currentSystem);
+      const nextY = currentSystem.startY + fullConfig.staffHeight + fullConfig.systemSpacing;
+      currentSystem = {
+        startX: fullConfig.marginLeft,
+        startY: nextY,
+        notes: [],
+        barLines: [],
+      };
+      currentX = fullConfig.marginLeft;
+      continue;
+    }
+
     // Check if we need to wrap to a new system
     if (currentX > fullConfig.canvasWidth - fullConfig.marginLeft) {
       systems.push(currentSystem);
@@ -183,7 +197,7 @@ export function computeLayout(score: Score, config?: Partial<LayoutConfig>): Sta
       };
       currentX = fullConfig.marginLeft;
     }
-  });
+  }
 
   // Add the last system if it has notes
   if (currentSystem.notes.length > 0) {

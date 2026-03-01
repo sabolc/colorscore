@@ -49,8 +49,12 @@ export const en: Translations = {
     octave: "Octave",
     octaveSelector: "Octave selector",
     setPitchTo: "Set pitch to",
+    lineBreak: "Line Break",
+    toggleLineBreak: "Toggle line break after this note",
     delete: "Delete",
     deleteNote: "Delete note",
+    multipleSelected: "{count} notes selected",
+    deleteSelected: "Delete Selected",
   },
   lyrics: {
     lyric: "Lyric",

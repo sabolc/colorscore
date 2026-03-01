@@ -49,8 +49,12 @@ export const hu: Translations = {
     octave: "Oktáv",
     octaveSelector: "Oktáv választó",
     setPitchTo: "Hangmagasság beállítása",
+    lineBreak: "Sortörés",
+    toggleLineBreak: "Sortörés az adott hang után",
     delete: "Törlés",
     deleteNote: "Hang törlése",
+    multipleSelected: "{count} hang kiválasztva",
+    deleteSelected: "Kiválasztottak törlése",
   },
   lyrics: {
     lyric: "Dalszöveg",

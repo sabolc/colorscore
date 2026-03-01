@@ -3,10 +3,12 @@
  *
  * This component provides a text input for attaching lyrics (syllables)
  * to the currently selected note. Lyrics only apply to notes, not rests.
+ * Hidden when multiple notes are selected (range editing lyrics is not meaningful).
  */
 
 import { useScore, useScoreDispatch } from "../store/ScoreContext";
 import { useSelection } from "../store/SelectionContext";
+import { getSelectedCount } from "../store/selectionReducer";
 import { useTranslation } from "../i18n";
 import styles from "./LyricsEditor.module.css";
 
@@ -20,7 +22,12 @@ export function LyricsEditor() {
     return null;
   }
 
-  const { partIndex, noteIndex } = selection;
+  // Hide when multiple notes are selected
+  if (getSelectedCount(selection) > 1) {
+    return null;
+  }
+
+  const { partIndex, focusIndex: noteIndex } = selection;
   const part = score.parts[partIndex];
   const noteOrRest = part?.notes[noteIndex];
 

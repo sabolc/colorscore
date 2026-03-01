@@ -148,7 +148,7 @@ describe("StaffRenderer", () => {
     const { container } = render(
       <StaffRenderer
         score={score}
-        selection={{ partIndex: 0, noteIndex: 0 }}
+        selection={{ partIndex: 0, anchorIndex: 0, focusIndex: 0 }}
       />
     );
 

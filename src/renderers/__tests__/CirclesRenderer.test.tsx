@@ -136,7 +136,7 @@ describe("CirclesRenderer", () => {
     const { container } = render(
       <CirclesRenderer
         score={score}
-        selection={{ partIndex: 0, noteIndex: 0 }}
+        selection={{ partIndex: 0, anchorIndex: 0, focusIndex: 0 }}
       />
     );
 
@@ -190,7 +190,7 @@ describe("CirclesRenderer", () => {
     const noteGroup = screen.getByTestId("note-circle-0-1");
     fireEvent.click(noteGroup);
 
-    expect(handleClick).toHaveBeenCalledWith(0, 1);
+    expect(handleClick).toHaveBeenCalledWith(0, 1, expect.anything());
   });
 
   it("renders rests as empty gaps (no visible circles)", () => {

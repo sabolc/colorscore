@@ -9,11 +9,12 @@ import React from "react";
 import type { Score, Pitch } from "../models/types";
 import { computeCirclesLayout, type CircleLayout } from "./circlesLayout";
 import { ULWILA_COLORS, getAccentedColors } from "../constants/colors";
+import { isNoteSelected, type SelectionState } from "../store/selectionReducer";
 
 export interface CirclesRendererProps {
   score: Score;
-  selection: { partIndex: number; noteIndex: number } | null;
-  onNoteClick?: (partIndex: number, noteIndex: number) => void;
+  selection: SelectionState | null;
+  onNoteClick?: (partIndex: number, noteIndex: number, event?: React.MouseEvent) => void;
   width?: number;
 }
 
@@ -66,14 +67,11 @@ function renderCircleElement(
   const pitch = note.pitch as Pitch;
   const color = ULWILA_COLORS[pitch];
   const isYellow = pitch === "H";
-  const isSelected =
-    selection !== null &&
-    selection.partIndex === circle.partIndex &&
-    selection.noteIndex === circle.noteIndex;
+  const isSelected = isNoteSelected(selection, circle.partIndex, circle.noteIndex);
 
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
     if (onNoteClick) {
-      onNoteClick(circle.partIndex, circle.noteIndex);
+      onNoteClick(circle.partIndex, circle.noteIndex, e);
     }
   };
 
@@ -151,6 +149,19 @@ function renderCircleElement(
             {circle.lyric}
           </text>
         )}
+        {/* Line break indicator */}
+        {note.lineBreakAfter && (
+          <text
+            x={circle.cx + circle.radius + 8}
+            y={circle.cy - circle.radius}
+            fontSize="12"
+            fill="#999"
+            textAnchor="start"
+            className="line-break-indicator"
+          >
+            {"↵"}
+          </text>
+        )}
       </g>
     );
   }
@@ -206,6 +217,19 @@ function renderCircleElement(
           className="lyric-text"
         >
           {circle.lyric}
+        </text>
+      )}
+      {/* Line break indicator */}
+      {note.lineBreakAfter && (
+        <text
+          x={circle.cx + circle.radius + 6}
+          y={circle.cy - circle.radius}
+          fontSize="12"
+          fill="#999"
+          textAnchor="start"
+          className="line-break-indicator"
+        >
+          {"↵"}
         </text>
       )}
     </g>

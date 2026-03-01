@@ -3,12 +3,14 @@
  *
  * This component provides controls for editing a selected note's pitch,
  * duration, and octave, as well as deleting the selected note/rest.
+ * Supports both single-note and range (multi-note) selection.
  */
 
 import type { Pitch, Octave, Duration } from "../models/types";
 import { ULWILA_COLORS, PITCH_NAMES } from "../constants/colors";
 import { useScore, useScoreDispatch } from "../store/ScoreContext";
 import { useSelection, useSelectionDispatch } from "../store/SelectionContext";
+import { getSelectedCount, getSelectionRange } from "../store/selectionReducer";
 import { useTranslation } from "../i18n";
 import styles from "./NoteEditor.module.css";
 
@@ -30,7 +32,40 @@ export function NoteEditor() {
     );
   }
 
-  const { partIndex, noteIndex } = selection;
+  const { partIndex, focusIndex } = selection;
+  const selectedCount = getSelectedCount(selection);
+
+  // Multi-selection mode: show summary + delete only
+  if (selectedCount > 1) {
+    const { start, end } = getSelectionRange(selection);
+
+    const handleDeleteRange = () => {
+      scoreDispatch({
+        type: "DELETE_NOTES",
+        payload: { partIndex, startIndex: start, endIndex: end },
+      });
+      selectionDispatch({ type: "CLEAR_SELECTION" });
+    };
+
+    return (
+      <div className={styles.noteEditor} data-testid="note-editor">
+        <h3 className={styles.heading}>
+          {t.noteEditor.multipleSelected.replace("{count}", String(selectedCount))}
+        </h3>
+        <button
+          type="button"
+          className={styles.deleteButton}
+          onClick={handleDeleteRange}
+          aria-label={t.noteEditor.deleteSelected}
+        >
+          {t.noteEditor.deleteSelected}
+        </button>
+      </div>
+    );
+  }
+
+  // Single selection mode
+  const noteIndex = focusIndex;
   const part = score.parts[partIndex];
   const noteOrRest = part?.notes[noteIndex];
 
@@ -68,6 +103,13 @@ export function NoteEditor() {
     scoreDispatch({
       type: "EDIT_NOTE",
       payload: { partIndex, noteIndex, changes: { octave } },
+    });
+  };
+
+  const handleToggleLineBreak = () => {
+    scoreDispatch({
+      type: "TOGGLE_LINE_BREAK",
+      payload: { partIndex, noteIndex },
     });
   };
 
@@ -158,6 +200,19 @@ export function NoteEditor() {
           ))}
         </select>
       </div>
+
+      {/* Line Break Toggle */}
+      <button
+        type="button"
+        className={`${styles.lineBreakButton} ${
+          noteOrRest.lineBreakAfter ? styles.lineBreakActive : ""
+        }`}
+        onClick={handleToggleLineBreak}
+        aria-label={t.noteEditor.toggleLineBreak}
+        aria-pressed={!!noteOrRest.lineBreakAfter}
+      >
+        {t.noteEditor.lineBreak} ↵
+      </button>
 
       {/* Delete Button */}
       <button

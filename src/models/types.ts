@@ -26,11 +26,13 @@ export interface Note {
   duration: Duration;
   lyric?: string;
   accented?: boolean;
+  lineBreakAfter?: boolean;
 }
 
 export interface Rest {
   type: "rest";
   duration: Duration;
+  lineBreakAfter?: boolean;
 }
 
 export type NoteOrRest = Note | Rest;

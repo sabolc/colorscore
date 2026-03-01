@@ -26,11 +26,18 @@ export const ScoreCanvas = React.forwardRef<HTMLDivElement, ScoreCanvasProps>(
       }
     };
 
-    const handleNoteClick = (partIndex: number, noteIndex: number) => {
-      selectionDispatch({
-        type: 'SELECT_NOTE',
-        payload: { partIndex, noteIndex }
-      });
+    const handleNoteClick = (partIndex: number, noteIndex: number, event?: React.MouseEvent) => {
+      if (event?.shiftKey && selection) {
+        selectionDispatch({
+          type: 'EXTEND_SELECTION',
+          payload: { noteIndex },
+        });
+      } else {
+        selectionDispatch({
+          type: 'SELECT_NOTE',
+          payload: { partIndex, noteIndex },
+        });
+      }
       if (onNoteClick) {
         onNoteClick(partIndex, noteIndex);
       }

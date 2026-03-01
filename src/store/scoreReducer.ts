@@ -43,6 +43,14 @@ export type ScoreAction =
   | {
       type: "SET_LYRIC";
       payload: { partIndex: number; noteIndex: number; lyric: string };
+    }
+  | {
+      type: "TOGGLE_LINE_BREAK";
+      payload: { partIndex: number; noteIndex: number };
+    }
+  | {
+      type: "DELETE_NOTES";
+      payload: { partIndex: number; startIndex: number; endIndex: number };
     };
 
 export const initialScoreState: Score = {
@@ -187,6 +195,38 @@ export function scoreReducer(state: Score, action: ScoreAction): Score {
       const newNotes = [...part.notes];
       newNotes[noteIndex] = updatedNote;
 
+      const newParts = [...state.parts];
+      newParts[partIndex] = { ...part, notes: newNotes };
+
+      return { ...state, parts: newParts };
+    }
+
+    case "DELETE_NOTES": {
+      const { partIndex, startIndex, endIndex } = action.payload;
+      const part = state.parts[partIndex];
+      if (!part) return state;
+
+      const newNotes = part.notes.filter((_, i) => i < startIndex || i > endIndex);
+      const newParts = [...state.parts];
+      newParts[partIndex] = { ...part, notes: newNotes };
+
+      return { ...state, parts: newParts };
+    }
+
+    case "TOGGLE_LINE_BREAK": {
+      const { partIndex, noteIndex } = action.payload;
+      const part = state.parts[partIndex];
+      if (!part) return state;
+      const note = part.notes[noteIndex];
+      if (!note) return state;
+
+      const updated = { ...note, lineBreakAfter: !note.lineBreakAfter };
+      if (!updated.lineBreakAfter) {
+        delete updated.lineBreakAfter;
+      }
+
+      const newNotes = [...part.notes];
+      newNotes[noteIndex] = updated;
       const newParts = [...state.parts];
       newParts[partIndex] = { ...part, notes: newNotes };
 

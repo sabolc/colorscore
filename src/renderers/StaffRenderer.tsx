@@ -15,11 +15,12 @@ import {
   getFlagCount,
 } from "./staffSymbols";
 import { ULWILA_COLORS, getAccentedColors } from "../constants/colors";
+import { isNoteSelected, type SelectionState } from "../store/selectionReducer";
 
 interface StaffRendererProps {
   score: Score;
-  selection: { partIndex: number; noteIndex: number } | null;
-  onNoteClick?: (partIndex: number, noteIndex: number) => void;
+  selection: SelectionState | null;
+  onNoteClick?: (partIndex: number, noteIndex: number, event?: React.MouseEvent) => void;
   width?: number;
 }
 
@@ -209,8 +210,7 @@ const StaffRenderer: React.FC<StaffRendererProps> = ({
     const { x, y, partIndex, noteIndex, isRest } = noteLayout;
     const pixelY = staffPositionToY(y, system.startY);
 
-    const isSelected =
-      selection && selection.partIndex === partIndex && selection.noteIndex === noteIndex;
+    const isSelected = isNoteSelected(selection, partIndex, noteIndex);
 
     if (isRest || note.type === "rest") {
       // Render rest symbol — paths are centered at origin
@@ -218,7 +218,7 @@ const StaffRenderer: React.FC<StaffRendererProps> = ({
       return (
         <g
           key={`note-${partIndex}-${noteIndex}`}
-          onClick={() => onNoteClick && onNoteClick(partIndex, noteIndex)}
+          onClick={(e) => onNoteClick && onNoteClick(partIndex, noteIndex, e)}
           style={{ cursor: "pointer" }}
         >
           <path
@@ -251,9 +251,9 @@ const StaffRenderer: React.FC<StaffRendererProps> = ({
     // Stem direction based on octave: lower octave = up (-1), middle/upper = down (+1)
     const stemDirection = noteLayout.octave === "lower" ? -1 : 1;
 
-    const handleClick = () => {
+    const handleClick = (e: React.MouseEvent) => {
       if (onNoteClick) {
-        onNoteClick(partIndex, noteIndex);
+        onNoteClick(partIndex, noteIndex, e);
       }
     };
 
@@ -350,6 +350,20 @@ const StaffRenderer: React.FC<StaffRendererProps> = ({
             className="lyric-text"
           >
             {note.lyric}
+          </text>
+        )}
+
+        {/* Line break indicator */}
+        {note.lineBreakAfter && (
+          <text
+            x={x + 14}
+            y={pixelY - 8}
+            fontSize="12"
+            fill="#999"
+            textAnchor="start"
+            className="line-break-indicator"
+          >
+            {"↵"}
           </text>
         )}
       </g>

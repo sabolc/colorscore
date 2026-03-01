@@ -52,8 +52,12 @@ export interface Translations {
     octave: string;
     octaveSelector: string;
     setPitchTo: string;
+    lineBreak: string;
+    toggleLineBreak: string;
     delete: string;
     deleteNote: string;
+    multipleSelected: string;
+    deleteSelected: string;
   };
   lyrics: {
     lyric: string;

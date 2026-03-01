@@ -134,6 +134,11 @@ function validateNoteOrRest(
       throw new Error(`${prefix}: accented must be a boolean if provided`);
     }
 
+    // Validate optional lineBreakAfter
+    if (obj.lineBreakAfter !== undefined && typeof obj.lineBreakAfter !== "boolean") {
+      throw new Error(`${prefix}: lineBreakAfter must be a boolean if provided`);
+    }
+
     const note: NoteOrRest = {
       type: "note",
       pitch: obj.pitch as Pitch,
@@ -146,6 +151,9 @@ function validateNoteOrRest(
     }
     if (obj.accented !== undefined) {
       (note as { accented: boolean }).accented = obj.accented as boolean;
+    }
+    if (obj.lineBreakAfter !== undefined) {
+      (note as { lineBreakAfter: boolean }).lineBreakAfter = obj.lineBreakAfter as boolean;
     }
 
     return note;
@@ -162,10 +170,21 @@ function validateNoteOrRest(
       );
     }
 
-    return {
+    // Validate optional lineBreakAfter
+    if (obj.lineBreakAfter !== undefined && typeof obj.lineBreakAfter !== "boolean") {
+      throw new Error(`${prefix}: lineBreakAfter must be a boolean if provided`);
+    }
+
+    const rest: NoteOrRest = {
       type: "rest",
       duration: obj.duration as Duration,
     };
+
+    if (obj.lineBreakAfter !== undefined) {
+      (rest as { lineBreakAfter: boolean }).lineBreakAfter = obj.lineBreakAfter as boolean;
+    }
+
+    return rest;
   }
 
   throw new Error(

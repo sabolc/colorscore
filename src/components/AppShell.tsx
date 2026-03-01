@@ -4,8 +4,18 @@ import { Toolbar } from './Toolbar'
 import { ScoreCanvas } from './ScoreCanvas'
 import { NoteEditor } from './NoteEditor'
 import { LyricsEditor } from './LyricsEditor'
+import { useScore, useScoreDispatch } from '../store/ScoreContext'
+import { useSelection, useSelectionDispatch } from '../store/SelectionContext'
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
 
 function AppShell() {
+  const score = useScore()
+  const scoreDispatch = useScoreDispatch()
+  const selection = useSelection()
+  const selectionDispatch = useSelectionDispatch()
+
+  useKeyboardShortcuts({ score, selection, selectionDispatch, scoreDispatch })
+
   return (
     <div className="app-shell">
       <div className="toolbar-slot" data-testid="toolbar-slot">
