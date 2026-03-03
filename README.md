@@ -1,5 +1,8 @@
 # ULWILA Color Score Editor
 
+<img width="1116" height="666" alt="image" src="https://github.com/user-attachments/assets/e42a68d4-474f-42f0-9098-4a833e8d12ef" />
+
+
 A web-based music notation editor using the ULWILA color system — a 7-color method for teaching music to children, including those with disabilities.
 
 ## About the ULWILA Method
