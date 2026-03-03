@@ -78,7 +78,9 @@ npm run test     # Run tests (Vitest)
 - Vető Anna & Ullrich, Heinrich (1997): *ULWILA Színeskotta. Tanári kézikönyv zeneoktatáshoz.* Budapest: Down Alapítvány Kiadó.
 - Down Alapítvány — [ULWILA Színeskotta](https://www.downalapitvany.hu/node/145)
 - Bakos Anita (2014): [Zenetanulás színesen](https://www.parlando.hu/2014/2014-3/Bakos_Anita_Zenetanulas.pdf) (Parlando)
-- [Színes kotta blog](https://www.szineskotta.com/) by Hangayné Márta Dóra
+
+<img width="593" height="616" alt="image" src="https://github.com/user-attachments/assets/49cd34a5-4b3b-4914-926b-4f95e63126fd" />
+
 
 ## License
 
