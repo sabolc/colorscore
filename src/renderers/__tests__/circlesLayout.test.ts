@@ -238,4 +238,123 @@ describe("computeCirclesLayout", () => {
 
     expect(layout.totalHeight).toBeGreaterThan(0);
   });
+
+  describe("grouping gap", () => {
+    const sixQuarters = (spaceAfterIndex?: number) =>
+      makeScore(
+        Array.from({ length: 6 }, (_, i) => ({
+          type: "note" as const,
+          pitch: "C" as const,
+          octave: "middle" as const,
+          duration: "quarter" as const,
+          ...(i === spaceAfterIndex ? { spaceAfter: true } : {}),
+        })),
+      );
+
+    it("widens the distance to the next symbol by half a beat unit", () => {
+      const plain = computeCirclesLayout(sixQuarters(), { canvasWidth: 2000 });
+      const gapped = computeCirclesLayout(sixQuarters(2), { canvasWidth: 2000 });
+
+      const plainCircles = plain.rows[0].circles;
+      const gappedCircles = gapped.rows[0].circles;
+      const spacing = plain.config.circleSpacing;
+
+      // Untouched up to and including the marked note
+      for (let i = 0; i <= 2; i++) {
+        expect(gappedCircles[i].cx).toBeCloseTo(plainCircles[i].cx);
+      }
+      // Everything after it shifts right by exactly half a beat unit
+      for (let i = 3; i < 6; i++) {
+        expect(gappedCircles[i].cx - plainCircles[i].cx).toBeCloseTo(spacing / 2);
+      }
+    });
+
+    it("leaves glyph sizes and the element count untouched", () => {
+      const gapped = computeCirclesLayout(sixQuarters(2), { canvasWidth: 2000 });
+      const circles = gapped.rows[0].circles;
+
+      expect(circles).toHaveLength(6);
+      for (const c of circles) {
+        expect(c.glyphs).toHaveLength(1);
+        expect(c.glyphs[0].kind).toBe("circle");
+        expect(c.radius).toBe(20);
+      }
+    });
+
+    it("produces no extra layout entry — the gap is not an element", () => {
+      const plain = computeCirclesLayout(sixQuarters(), { canvasWidth: 2000 });
+      const gapped = computeCirclesLayout(sixQuarters(2), { canvasWidth: 2000 });
+
+      expect(gapped.rows[0].circles).toHaveLength(plain.rows[0].circles.length);
+    });
+
+    it("drops the gap at a forced line break, so the next row is not indented", () => {
+      const layout = computeCirclesLayout(
+        makeScore([
+          { type: "note", pitch: "C", octave: "middle", duration: "quarter", spaceAfter: true, lineBreakAfter: true },
+          { type: "note", pitch: "D", octave: "middle", duration: "quarter" },
+        ]),
+        { canvasWidth: 2000 },
+      );
+
+      expect(layout.rows).toHaveLength(2);
+      expect(layout.rows[1].circles[0].cx).toBeCloseTo(layout.rows[0].circles[0].cx);
+    });
+
+    it("drops the gap when the next element wraps on width", () => {
+      // Three quarters fit per row at this width; mark the last one on row 1
+      const notes = Array.from({ length: 6 }, (_, i) => ({
+        type: "note" as const,
+        pitch: "C" as const,
+        octave: "middle" as const,
+        duration: "quarter" as const,
+        ...(i === 2 ? { spaceAfter: true } : {}),
+      }));
+      const layout = computeCirclesLayout(makeScore(notes), { canvasWidth: 200 });
+
+      expect(layout.rows.length).toBeGreaterThan(1);
+      const firstOfEachRow = layout.rows.map((r) => r.circles[0].cx);
+      for (const cx of firstOfEachRow) {
+        expect(cx).toBeCloseTo(firstOfEachRow[0]);
+      }
+    });
+
+    it("composes with the shorter durations", () => {
+      const layout = computeCirclesLayout(
+        makeScore([
+          { type: "note", pitch: "C", octave: "middle", duration: "eighth", spaceAfter: true },
+          { type: "note", pitch: "D", octave: "middle", duration: "sixteenth" },
+        ]),
+        { canvasWidth: 2000 },
+      );
+
+      const [first, second] = layout.rows[0].circles;
+      const spacing = layout.config.circleSpacing;
+      // eighth span (1/2) + gap (1/2) = one full beat unit between span starts
+      expect(second.cx - first.cx).toBeCloseTo(spacing / 4 + spacing / 2 + spacing / 8);
+      expect(first.glyphs[0].kind).toBe("half-circle");
+      expect(second.glyphs[0].kind).toBe("bar");
+    });
+
+    it("applies the gap after a rest too", () => {
+      const plain = computeCirclesLayout(
+        makeScore([
+          { type: "rest", duration: "quarter" },
+          { type: "note", pitch: "C", octave: "middle", duration: "quarter" },
+        ]),
+        { canvasWidth: 2000 },
+      );
+      const gapped = computeCirclesLayout(
+        makeScore([
+          { type: "rest", duration: "quarter", spaceAfter: true },
+          { type: "note", pitch: "C", octave: "middle", duration: "quarter" },
+        ]),
+        { canvasWidth: 2000 },
+      );
+
+      expect(
+        gapped.rows[0].circles[1].cx - plain.rows[0].circles[1].cx,
+      ).toBeCloseTo(plain.config.circleSpacing / 2);
+    });
+  });
 });

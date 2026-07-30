@@ -242,4 +242,69 @@ describe("NoteEditor", () => {
 
     expect(octaveSelect).toHaveValue("upper");
   });
+
+  describe("grouping gap toggle", () => {
+    const GAP_LABEL = "Toggle a grouping gap after this note (spacing only, not a rest)";
+    const BREAK_LABEL = "Toggle line break after this note";
+
+    it("renders for a selected note and reflects the marker", () => {
+      renderWithSelection(
+        makeScore([{ type: "note", pitch: "C", octave: "middle", duration: "quarter" }]),
+        0,
+        0,
+      );
+
+      const button = screen.getByLabelText(GAP_LABEL);
+      expect(button).toBeInTheDocument();
+      expect(button).toHaveAttribute("aria-pressed", "false");
+    });
+
+    it("shows a pressed state when the note already has a gap", () => {
+      renderWithSelection(
+        makeScore([
+          {
+            type: "note",
+            pitch: "C",
+            octave: "middle",
+            duration: "quarter",
+            spaceAfter: true,
+          },
+        ]),
+        0,
+        0,
+      );
+
+      expect(screen.getByLabelText(GAP_LABEL)).toHaveAttribute("aria-pressed", "true");
+    });
+
+    it("is enabled for a selected rest", () => {
+      renderWithSelection(makeScore([{ type: "rest", duration: "quarter" }]), 0, 0);
+
+      expect(screen.getByLabelText(GAP_LABEL)).toBeEnabled();
+    });
+
+    it("is a separate control from the line break toggle", () => {
+      renderWithSelection(
+        makeScore([{ type: "note", pitch: "C", octave: "middle", duration: "quarter" }]),
+        0,
+        0,
+      );
+
+      expect(screen.getByLabelText(GAP_LABEL)).not.toBe(
+        screen.getByLabelText(BREAK_LABEL),
+      );
+    });
+
+    it("toggles the gap on click", () => {
+      renderWithSelection(
+        makeScore([{ type: "note", pitch: "C", octave: "middle", duration: "quarter" }]),
+        0,
+        0,
+      );
+
+      fireEvent.click(screen.getByLabelText(GAP_LABEL));
+
+      expect(screen.getByLabelText(GAP_LABEL)).toHaveAttribute("aria-pressed", "true");
+    });
+  });
 });

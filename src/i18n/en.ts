@@ -49,6 +49,8 @@ export const en: Translations = {
     octave: "Octave",
     octaveSelector: "Octave selector",
     setPitchTo: "Set pitch to",
+    space: "Gap",
+    toggleSpace: "Toggle a grouping gap after this note (spacing only, not a rest)",
     lineBreak: "Line Break",
     toggleLineBreak: "Toggle line break after this note",
     delete: "Delete",

@@ -106,6 +106,13 @@ export function NoteEditor() {
     });
   };
 
+  const handleToggleSpace = () => {
+    scoreDispatch({
+      type: "TOGGLE_SPACE",
+      payload: { partIndex, noteIndex },
+    });
+  };
+
   const handleToggleLineBreak = () => {
     scoreDispatch({
       type: "TOGGLE_LINE_BREAK",
@@ -200,6 +207,19 @@ export function NoteEditor() {
           ))}
         </select>
       </div>
+
+      {/* Grouping Gap Toggle — a plain space, not a rest */}
+      <button
+        type="button"
+        className={`${styles.spaceButton} ${
+          noteOrRest.spaceAfter ? styles.spaceActive : ""
+        }`}
+        onClick={handleToggleSpace}
+        aria-label={t.noteEditor.toggleSpace}
+        aria-pressed={!!noteOrRest.spaceAfter}
+      >
+        {t.noteEditor.space} ␣
+      </button>
 
       {/* Line Break Toggle */}
       <button

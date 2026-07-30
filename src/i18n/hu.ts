@@ -49,6 +49,8 @@ export const hu: Translations = {
     octave: "Oktáv",
     octaveSelector: "Oktáv választó",
     setPitchTo: "Hangmagasság beállítása",
+    space: "Szóköz",
+    toggleSpace: "Szóköz az adott hang után (csak térköz, nem szünet)",
     lineBreak: "Sortörés",
     toggleLineBreak: "Sortörés az adott hang után",
     delete: "Törlés",

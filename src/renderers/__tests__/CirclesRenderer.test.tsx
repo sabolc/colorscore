@@ -364,4 +364,26 @@ describe("CirclesRenderer", () => {
 
     expect(container.querySelectorAll(".octave-dot")).toHaveLength(0);
   });
+
+  it("draws nothing for a grouping gap — it is not a rest", () => {
+    const gapped = makeScore([
+      { type: "note", pitch: "C", octave: "middle", duration: "quarter", spaceAfter: true },
+      { type: "note", pitch: "E", octave: "middle", duration: "quarter" },
+    ]);
+    const rested = makeScore([
+      { type: "note", pitch: "C", octave: "middle", duration: "quarter" },
+      { type: "rest", duration: "quarter" },
+      { type: "note", pitch: "E", octave: "middle", duration: "quarter" },
+    ]);
+
+    const gapDom = render(<CirclesRenderer score={gapped} selection={null} />).container;
+    const restDom = render(<CirclesRenderer score={rested} selection={null} />).container;
+
+    // The gap adds no drawn element of any kind
+    expect(gapDom.querySelectorAll(".rest-symbol")).toHaveLength(0);
+    expect(gapDom.querySelectorAll(".note-circle")).toHaveLength(2);
+
+    // A rest, by contrast, draws its hexagon outline
+    expect(restDom.querySelectorAll(".rest-symbol")).toHaveLength(1);
+  });
 });

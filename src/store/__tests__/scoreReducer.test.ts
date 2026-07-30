@@ -275,4 +275,103 @@ describe("scoreReducer", () => {
     expect(state1.parts).not.toBe(state2.parts);
     expect(state1.parts[0]).not.toBe(state2.parts[0]);
   });
+
+  describe("TOGGLE_SPACE", () => {
+    const threeNotes = () => {
+      let state = initialScoreState;
+      for (const pitch of ["C", "D", "E"] as const) {
+        state = scoreReducer(state, {
+          type: "ADD_NOTE",
+          payload: { pitch, octave: "middle", duration: "quarter" },
+        });
+      }
+      return state;
+    };
+
+    it("sets the grouping gap on the addressed note", () => {
+      const toggled = scoreReducer(threeNotes(), {
+        type: "TOGGLE_SPACE",
+        payload: { partIndex: 0, noteIndex: 1 },
+      });
+
+      expect(toggled.parts[0].notes[1].spaceAfter).toBe(true);
+      expect(toggled.parts[0].notes[0].spaceAfter).toBeUndefined();
+      expect(toggled.parts[0].notes[2].spaceAfter).toBeUndefined();
+    });
+
+    it("does not change duration, element count, or type", () => {
+      const before = threeNotes();
+      const after = scoreReducer(before, {
+        type: "TOGGLE_SPACE",
+        payload: { partIndex: 0, noteIndex: 1 },
+      });
+
+      expect(after.parts[0].notes).toHaveLength(before.parts[0].notes.length);
+      expect(after.parts[0].notes[1].duration).toBe("quarter");
+      expect(after.parts[0].notes[1].type).toBe("note");
+    });
+
+    it("clears the gap on a second toggle, storing undefined not false", () => {
+      const on = scoreReducer(threeNotes(), {
+        type: "TOGGLE_SPACE",
+        payload: { partIndex: 0, noteIndex: 0 },
+      });
+      const off = scoreReducer(on, {
+        type: "TOGGLE_SPACE",
+        payload: { partIndex: 0, noteIndex: 0 },
+      });
+
+      expect(off.parts[0].notes[0].spaceAfter).toBeUndefined();
+      // The marker must be absent, not present-and-false, so exports stay clean
+      expect("spaceAfter" in off.parts[0].notes[0]).toBe(true);
+      expect(JSON.parse(JSON.stringify(off.parts[0].notes[0]))).not.toHaveProperty(
+        "spaceAfter",
+      );
+    });
+
+    it("works on a rest", () => {
+      const withRest = scoreReducer(initialScoreState, {
+        type: "ADD_REST",
+        payload: { duration: "quarter" },
+      });
+      const toggled = scoreReducer(withRest, {
+        type: "TOGGLE_SPACE",
+        payload: { partIndex: 0, noteIndex: 0 },
+      });
+
+      expect(toggled.parts[0].notes[0].type).toBe("rest");
+      expect(toggled.parts[0].notes[0].spaceAfter).toBe(true);
+    });
+
+    it("is independent of the line break marker", () => {
+      const spaced = scoreReducer(threeNotes(), {
+        type: "TOGGLE_SPACE",
+        payload: { partIndex: 0, noteIndex: 0 },
+      });
+      const both = scoreReducer(spaced, {
+        type: "TOGGLE_LINE_BREAK",
+        payload: { partIndex: 0, noteIndex: 0 },
+      });
+
+      expect(both.parts[0].notes[0].spaceAfter).toBe(true);
+      expect(both.parts[0].notes[0].lineBreakAfter).toBe(true);
+
+      const spaceOff = scoreReducer(both, {
+        type: "TOGGLE_SPACE",
+        payload: { partIndex: 0, noteIndex: 0 },
+      });
+      expect(spaceOff.parts[0].notes[0].spaceAfter).toBeUndefined();
+      expect(spaceOff.parts[0].notes[0].lineBreakAfter).toBe(true);
+    });
+
+    it("ignores an out-of-range index", () => {
+      const state = threeNotes();
+      expect(
+        scoreReducer(state, {
+          type: "TOGGLE_SPACE",
+          payload: { partIndex: 0, noteIndex: 99 },
+        }),
+      ).toBe(state);
+    });
+  });
 });

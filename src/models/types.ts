@@ -26,12 +26,20 @@ export interface Note {
   duration: Duration;
   lyric?: string;
   accented?: boolean;
+  /**
+   * Visual grouping gap after this note, as published ULWILA scores use to
+   * separate words and phrases. Purely typographic: it carries no duration,
+   * is not a rest, and does not affect beat counting.
+   */
+  spaceAfter?: boolean;
   lineBreakAfter?: boolean;
 }
 
 export interface Rest {
   type: "rest";
   duration: Duration;
+  /** Visual grouping gap after this rest. See {@link Note.spaceAfter}. */
+  spaceAfter?: boolean;
   lineBreakAfter?: boolean;
 }
 

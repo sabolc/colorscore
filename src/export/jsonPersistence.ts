@@ -134,6 +134,11 @@ function validateNoteOrRest(
       throw new Error(`${prefix}: accented must be a boolean if provided`);
     }
 
+    // Validate optional spaceAfter
+    if (obj.spaceAfter !== undefined && typeof obj.spaceAfter !== "boolean") {
+      throw new Error(`${prefix}: spaceAfter must be a boolean if provided`);
+    }
+
     // Validate optional lineBreakAfter
     if (obj.lineBreakAfter !== undefined && typeof obj.lineBreakAfter !== "boolean") {
       throw new Error(`${prefix}: lineBreakAfter must be a boolean if provided`);
@@ -151,6 +156,9 @@ function validateNoteOrRest(
     }
     if (obj.accented !== undefined) {
       (note as { accented: boolean }).accented = obj.accented as boolean;
+    }
+    if (obj.spaceAfter !== undefined) {
+      (note as { spaceAfter: boolean }).spaceAfter = obj.spaceAfter as boolean;
     }
     if (obj.lineBreakAfter !== undefined) {
       (note as { lineBreakAfter: boolean }).lineBreakAfter = obj.lineBreakAfter as boolean;
@@ -170,6 +178,11 @@ function validateNoteOrRest(
       );
     }
 
+    // Validate optional spaceAfter
+    if (obj.spaceAfter !== undefined && typeof obj.spaceAfter !== "boolean") {
+      throw new Error(`${prefix}: spaceAfter must be a boolean if provided`);
+    }
+
     // Validate optional lineBreakAfter
     if (obj.lineBreakAfter !== undefined && typeof obj.lineBreakAfter !== "boolean") {
       throw new Error(`${prefix}: lineBreakAfter must be a boolean if provided`);
@@ -180,6 +193,9 @@ function validateNoteOrRest(
       duration: obj.duration as Duration,
     };
 
+    if (obj.spaceAfter !== undefined) {
+      (rest as { spaceAfter: boolean }).spaceAfter = obj.spaceAfter as boolean;
+    }
     if (obj.lineBreakAfter !== undefined) {
       (rest as { lineBreakAfter: boolean }).lineBreakAfter = obj.lineBreakAfter as boolean;
     }

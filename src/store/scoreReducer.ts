@@ -49,6 +49,10 @@ export type ScoreAction =
       payload: { partIndex: number; noteIndex: number };
     }
   | {
+      type: "TOGGLE_SPACE";
+      payload: { partIndex: number; noteIndex: number };
+    }
+  | {
       type: "DELETE_NOTES";
       payload: { partIndex: number; startIndex: number; endIndex: number };
     };
@@ -222,6 +226,26 @@ export function scoreReducer(state: Score, action: ScoreAction): Score {
 
       const newValue = !note.lineBreakAfter;
       const updated = { ...note, lineBreakAfter: newValue || undefined };
+
+      const newNotes = [...part.notes];
+      newNotes[noteIndex] = updated;
+      const newParts = [...state.parts];
+      newParts[partIndex] = { ...part, notes: newNotes };
+
+      return { ...state, parts: newParts };
+    }
+
+    case "TOGGLE_SPACE": {
+      const { partIndex, noteIndex } = action.payload;
+      const part = state.parts[partIndex];
+      if (!part) return state;
+      const note = part.notes[noteIndex];
+      if (!note) return state;
+
+      // Store undefined rather than false when clearing, so the marker is
+      // omitted from exported JSON instead of writing noise into every file.
+      const newValue = !note.spaceAfter;
+      const updated = { ...note, spaceAfter: newValue || undefined };
 
       const newNotes = [...part.notes];
       newNotes[noteIndex] = updated;

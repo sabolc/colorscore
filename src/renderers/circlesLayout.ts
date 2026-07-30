@@ -126,6 +126,13 @@ const BAR_WIDTH_RATIO = 0.18;
 const HEXAGON_WIDTH_RATIO = Math.sqrt(3);
 
 /**
+ * Width of a grouping gap, in quarter-note beat units. Published ULWILA scores
+ * separate words and phrases with a plain space; this is that space. It carries
+ * no duration and is never drawn — only advanced past.
+ */
+export const GAP_BEATS = 0.5;
+
+/**
  * Maps a duration to the number of quarter-note beat slots it occupies.
  * Eighths and sixteenths take a fraction of a slot so that two eighths or
  * four sixteenths fill exactly one beat, as the ULWILA method requires.
@@ -176,22 +183,31 @@ export function computeCirclesLayout(
   let currentRowY = fullConfig.marginTop + baseRadius;
 
   const maxX = fullConfig.canvasWidth - fullConfig.marginLeft;
+  const gapWidth = GAP_BEATS * fullConfig.circleSpacing;
+  // Gap owed by the previous element. Held rather than applied immediately so
+  // that a gap at the end of a row is dropped instead of indenting the next one.
+  let pendingGap = 0;
 
   for (const { note, partIndex, noteIndex } of allNotes) {
     const spanWidth = durationToBeats(note.duration) * fullConfig.circleSpacing;
+    let gapBefore = pendingGap;
 
-    // Check if we need to wrap to a new row
-    if (currentX + spanWidth > maxX && currentRow.length > 0) {
+    // Check if we need to wrap to a new row — the pending gap counts towards
+    // the width, but is discarded once we do wrap.
+    if (currentX + gapBefore + spanWidth > maxX && currentRow.length > 0) {
       rows.push({ startY: currentRowY, circles: currentRow });
       currentRow = [];
       currentRowY += fullConfig.rowSpacing;
       currentX = fullConfig.marginLeft;
+      gapBefore = 0;
     }
 
+    currentX += gapBefore;
     currentRow.push(
       computeSymbol(note, currentX, spanWidth, currentRowY, baseRadius, partIndex, noteIndex)
     );
     currentX += spanWidth;
+    pendingGap = note.spaceAfter ? gapWidth : 0;
 
     // Force line break if the note has lineBreakAfter set
     if (note.lineBreakAfter) {
@@ -199,6 +215,7 @@ export function computeCirclesLayout(
       currentRow = [];
       currentRowY += fullConfig.rowSpacing;
       currentX = fullConfig.marginLeft;
+      pendingGap = 0;
       continue;
     }
   }

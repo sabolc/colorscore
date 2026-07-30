@@ -577,4 +577,93 @@ describe("loadScore", () => {
       expect(loaded.parts[0].notes[0]).toMatchObject({ duration });
     }
   });
+
+  describe("layout markers", () => {
+    it("round-trips the grouping gap and the line break", async () => {
+      const score = makeValidScore({
+        parts: [
+          {
+            notes: [
+              { type: "note", pitch: "C", octave: "middle", duration: "quarter" },
+              {
+                type: "note",
+                pitch: "D",
+                octave: "middle",
+                duration: "quarter",
+                spaceAfter: true,
+              },
+              { type: "rest", duration: "quarter", spaceAfter: true },
+              {
+                type: "note",
+                pitch: "E",
+                octave: "middle",
+                duration: "quarter",
+                lineBreakAfter: true,
+              },
+            ],
+          },
+        ],
+      });
+
+      const loaded = await loadScore(makeScoreFile(score));
+
+      expect(loaded.parts[0].notes[1].spaceAfter).toBe(true);
+      expect(loaded.parts[0].notes[2]).toMatchObject({
+        type: "rest",
+        spaceAfter: true,
+      });
+      expect(loaded.parts[0].notes[3].lineBreakAfter).toBe(true);
+      // Unmarked elements stay unmarked
+      expect(loaded.parts[0].notes[0].spaceAfter).toBeUndefined();
+      expect(loaded.parts[0].notes[0].lineBreakAfter).toBeUndefined();
+    });
+
+    it("loads a score file written before the markers existed", async () => {
+      const legacy = {
+        title: "Old Score",
+        renderingMode: "circles",
+        timeSignature: { beats: 4, beatValue: 4 },
+        clef: "treble",
+        parts: [
+          {
+            notes: [
+              { type: "note", pitch: "G", octave: "middle", duration: "quarter" },
+              { type: "rest", duration: "half" },
+            ],
+          },
+        ],
+      };
+
+      const loaded = await loadScore(makeFile(JSON.stringify(legacy)));
+
+      expect(loaded.parts[0].notes).toHaveLength(2);
+      for (const element of loaded.parts[0].notes) {
+        expect(element.spaceAfter).toBeUndefined();
+        expect(element.lineBreakAfter).toBeUndefined();
+      }
+    });
+
+    it("rejects a non-boolean spaceAfter", async () => {
+      const bad = {
+        ...makeValidScore(),
+        parts: [
+          {
+            notes: [
+              {
+                type: "note",
+                pitch: "C",
+                octave: "middle",
+                duration: "quarter",
+                spaceAfter: "yes",
+              },
+            ],
+          },
+        ],
+      };
+
+      await expect(loadScore(makeFile(JSON.stringify(bad)))).rejects.toThrow(
+        /spaceAfter must be a boolean/,
+      );
+    });
+  });
 });
