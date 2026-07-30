@@ -33,11 +33,9 @@ const StaffRenderer: React.FC<StaffRendererProps> = ({
   const layout = computeLayout(score, { canvasWidth: width });
   const { config } = layout;
 
-  // Calculate total SVG height needed
-  const lastSystem = layout.systems[layout.systems.length - 1];
-  const svgHeight = lastSystem
-    ? lastSystem.startY + config.staffHeight + config.marginTop
-    : config.marginTop + config.staffHeight;
+  // The layout measures how far the notes reach outside the staff, so a bass
+  // staff with middle-octave notes above it is not clipped at the top edge.
+  const svgHeight = layout.totalHeight;
 
   /**
    * Render staff lines for a system

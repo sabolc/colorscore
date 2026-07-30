@@ -33,6 +33,8 @@ export interface StaffSystem {
 }
 
 export interface StaffLayout {
+  /** Total SVG height needed, including notes reaching outside the staff */
+  totalHeight: number;
   systems: StaffSystem[];
   config: LayoutConfig;
 }
@@ -58,51 +60,64 @@ const DURATION_TO_BEATS: Record<Duration, number> = {
   sixteenth: 0.25,
 };
 
+/** Diatonic step of each pitch inside its octave (C = 0 ... H/B = 6). */
+const PITCH_STEP: Record<Pitch, number> = {
+  C: 0,
+  D: 1,
+  E: 2,
+  F: 3,
+  G: 4,
+  A: 5,
+  H: 6,
+};
+
+/**
+ * ULWILA's three registers as scientific octave numbers. The main register is
+ * the one around middle C, which is what the plain (dotless) circles mean.
+ */
+const OCTAVE_NUMBER: Record<Octave, number> = {
+  lower: 3,
+  middle: 4,
+  upper: 5,
+};
+
+/**
+ * Diatonic index of the note sitting on each clef's bottom staff line:
+ * E4 for treble, G2 for bass.
+ */
+/**
+ * Vertical room a note needs beyond its own centre: the notehead itself plus
+ * the ledger lines that carry it outside the staff.
+ */
+const NOTE_CLEARANCE = 14;
+
+const CLEF_BOTTOM_LINE: Record<Clef, number> = {
+  treble: 4 * 7 + PITCH_STEP.E,
+  bass: 2 * 7 + PITCH_STEP.G,
+};
+
 /**
  * Convert pitch and octave to staff position.
- * Returns a number where 0 = bottom line of staff.
- * Each position unit is half a staffLineSpacing (one step = half the line-to-line distance).
+ * Returns a number where 0 = bottom line of staff, one unit per diatonic step
+ * (line to adjacent space).
  *
- * For treble clef positions (bottom line = E):
- * - Lower octave: C=−2, D=−1, E=0, F=1, G=2, A=3, H(B)=4
- * - Middle octave: C=5, D=6, E=7, F=8, G=9, A=10, H(B)=11
- * - Upper octave: C=12, D=13, E=14, F=15, G=16, A=17, H(B)=18
+ * The pitch is resolved to an absolute position first and only then measured
+ * against the clef, so a note keeps its sounding pitch when the clef changes.
+ * Adding a clef-specific pitch offset to a clef-independent octave offset --
+ * as this did before -- made the same note read two octaves apart in bass
+ * clef, and put the whole treble range an octave too high.
  *
- * For bass clef positions (bottom line = G):
- * - Lower octave: C=−4, D=−3, E=−2, F=−1, G=0, A=1, H(B)=2
- * - Middle octave: C=3, D=4, E=5, F=6, G=7, A=8, H(B)=9
- * - Upper octave: C=10, D=11, E=12, F=13, G=14, A=15, H(B)=16
+ * Treble (bottom line E4): middle C sits at -2, the first ledger line below
+ * the staff, per SPEC-STAFF-RENDERING-R-PITCH-PLACEMENT. Middle-octave G is
+ * at 2, the second line up -- the line the treble clef names.
+ *
+ * Bass (bottom line G2): middle C sits at 10, the first ledger line above the
+ * staff. Lower-octave F is at 6, the fourth line -- the line the bass clef
+ * names.
  */
 export function pitchToStaffPosition(pitch: Pitch, octave: Octave, clef: Clef): number {
-  const treblePitchOffsets: Record<Pitch, number> = {
-    C: -2,
-    D: -1,
-    E: 0,
-    F: 1,
-    G: 2,
-    A: 3,
-    H: 4,
-  };
-
-  const bassPitchOffsets: Record<Pitch, number> = {
-    C: -4,
-    D: -3,
-    E: -2,
-    F: -1,
-    G: 0,
-    A: 1,
-    H: 2,
-  };
-
-  const octaveOffsets: Record<Octave, number> = {
-    lower: 0,
-    middle: 7,
-    upper: 14,
-  };
-
-  const pitchOffsets = clef === "bass" ? bassPitchOffsets : treblePitchOffsets;
-
-  return pitchOffsets[pitch] + octaveOffsets[octave];
+  const diatonicIndex = OCTAVE_NUMBER[octave] * 7 + PITCH_STEP[pitch];
+  return diatonicIndex - CLEF_BOTTOM_LINE[clef];
 }
 
 /**
@@ -209,8 +224,39 @@ export function computeLayout(score: Score, config?: Partial<LayoutConfig>): Sta
     systems.push(currentSystem);
   }
 
+  // Notes can sit well outside the staff — the middle octave is far above a
+  // bass staff, the lower octave far below a treble one. Measure how far and
+  // give them room, otherwise the noteheads are clipped by the SVG edge.
+  const halfStep = fullConfig.staffLineSpacing / 2;
+  // Offsets relative to a system's startY. The staff itself spans 0 to
+  // staffHeight; only notes reaching past that need extra clearance.
+  let contentTop = 0;
+  let contentBottom = fullConfig.staffHeight;
+  for (const system of systems) {
+    for (const note of system.notes) {
+      const offset = fullConfig.staffHeight - note.y * halfStep;
+      contentTop = Math.min(contentTop, offset - NOTE_CLEARANCE);
+      contentBottom = Math.max(contentBottom, offset + NOTE_CLEARANCE);
+    }
+  }
+
+  const bottomOffset = contentBottom;
+
+  // Push everything down if the highest note would land above the top edge
+  const extraTop = Math.max(0, -contentTop);
+  if (extraTop > 0) {
+    for (const system of systems) {
+      system.startY += extraTop;
+    }
+  }
+
+  const lastStartY = systems[systems.length - 1].startY;
+  const totalHeight =
+    lastStartY + Math.max(bottomOffset, fullConfig.staffHeight) + fullConfig.marginTop;
+
   return {
     systems,
     config: fullConfig,
+    totalHeight,
   };
 }
