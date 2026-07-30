@@ -374,4 +374,81 @@ describe("scoreReducer", () => {
       ).toBe(state);
     });
   });
+
+  describe("CYCLE_MEASURE_ACCENT", () => {
+    const oneNote = (extra: Record<string, unknown> = {}) => {
+      const state = scoreReducer(initialScoreState, {
+        type: "ADD_NOTE",
+        payload: { pitch: "G", octave: "middle", duration: "quarter" },
+      });
+      const notes = [...state.parts[0].notes];
+      notes[0] = { ...notes[0], ...extra } as typeof notes[0];
+      return { ...state, parts: [{ ...state.parts[0], notes }] };
+    };
+    const cycle = (state: Score) =>
+      scoreReducer(state, {
+        type: "CYCLE_MEASURE_ACCENT",
+        payload: { partIndex: 0, noteIndex: 0 },
+      });
+
+    it("cycles automatic to on to off and back", () => {
+      const auto = oneNote();
+      expect(auto.parts[0].notes[0].measureAccent).toBeUndefined();
+
+      const on = cycle(auto);
+      expect(on.parts[0].notes[0].measureAccent).toBe("on");
+
+      const off = cycle(on);
+      expect(off.parts[0].notes[0].measureAccent).toBe("off");
+
+      const back = cycle(off);
+      expect(back.parts[0].notes[0].measureAccent).toBeUndefined();
+    });
+
+    it("stores undefined for automatic so the field leaves no trace in JSON", () => {
+      const back = cycle(cycle(cycle(oneNote())));
+      expect(JSON.parse(JSON.stringify(back.parts[0].notes[0]))).not.toHaveProperty(
+        "measureAccent",
+      );
+    });
+
+    it("works on a rest", () => {
+      const withRest = scoreReducer(initialScoreState, {
+        type: "ADD_REST",
+        payload: { duration: "quarter" },
+      });
+      const cycled = cycle(withRest);
+
+      expect(cycled.parts[0].notes[0].type).toBe("rest");
+      expect(cycled.parts[0].notes[0].measureAccent).toBe("on");
+    });
+
+    it("leaves the accented (sharp) property untouched", () => {
+      const sharp = oneNote({ accented: true });
+      const cycled = cycle(sharp);
+
+      expect(cycled.parts[0].notes[0]).toMatchObject({
+        accented: true,
+        measureAccent: "on",
+      });
+    });
+
+    it("does not disturb the other layout markers", () => {
+      const marked = oneNote({ spaceAfter: true, lineBreakAfter: true });
+      const cycled = cycle(marked);
+
+      expect(cycled.parts[0].notes[0].spaceAfter).toBe(true);
+      expect(cycled.parts[0].notes[0].lineBreakAfter).toBe(true);
+    });
+
+    it("ignores an out-of-range index", () => {
+      const state = oneNote();
+      expect(
+        scoreReducer(state, {
+          type: "CYCLE_MEASURE_ACCENT",
+          payload: { partIndex: 0, noteIndex: 99 },
+        }),
+      ).toBe(state);
+    });
+  });
 });

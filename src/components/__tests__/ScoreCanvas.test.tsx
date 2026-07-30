@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { act, render, screen, fireEvent } from '@testing-library/react';
 import { ScoreCanvas } from '../ScoreCanvas';
 import { ScoreProvider } from '../../store/ScoreContext';
 import { SelectionProvider } from '../../store/SelectionContext';
@@ -71,5 +71,34 @@ describe('ScoreCanvas', () => {
     // For now, we can't actually trigger note clicks since we don't have notes rendered
     // This test just verifies the prop is accepted
     expect(screen.getByTestId('score-canvas')).toBeInTheDocument();
+  });
+
+  describe('render width', () => {
+    it('sizes the score to the container instead of a fixed width', () => {
+      const { container } = renderWithProviders(createMockScore('circles'));
+      const canvas = container.querySelector('[data-testid="score-canvas"]') as HTMLElement;
+
+      // jsdom reports clientWidth 0, so the clamp is what we can observe here
+      Object.defineProperty(canvas, 'clientWidth', { value: 1000, configurable: true });
+      act(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
+
+      const svg = container.querySelector('[data-testid="circles-renderer"]')!;
+      expect(Number(svg.getAttribute('width'))).toBe(1000 - 24);
+    });
+
+    it('never renders narrower than the minimum, however cramped the container', () => {
+      const { container } = renderWithProviders(createMockScore('circles'));
+      const canvas = container.querySelector('[data-testid="score-canvas"]') as HTMLElement;
+
+      Object.defineProperty(canvas, 'clientWidth', { value: 50, configurable: true });
+      act(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
+
+      const svg = container.querySelector('[data-testid="circles-renderer"]')!;
+      expect(Number(svg.getAttribute('width'))).toBe(320);
+    });
   });
 });

@@ -53,6 +53,10 @@ export type ScoreAction =
       payload: { partIndex: number; noteIndex: number };
     }
   | {
+      type: "CYCLE_MEASURE_ACCENT";
+      payload: { partIndex: number; noteIndex: number };
+    }
+  | {
       type: "DELETE_NOTES";
       payload: { partIndex: number; startIndex: number; endIndex: number };
     };
@@ -249,6 +253,30 @@ export function scoreReducer(state: Score, action: ScoreAction): Score {
 
       const newNotes = [...part.notes];
       newNotes[noteIndex] = updated;
+      const newParts = [...state.parts];
+      newParts[partIndex] = { ...part, notes: newNotes };
+
+      return { ...state, parts: newParts };
+    }
+
+    case "CYCLE_MEASURE_ACCENT": {
+      const { partIndex, noteIndex } = action.payload;
+      const part = state.parts[partIndex];
+      if (!part) return state;
+      const note = part.notes[noteIndex];
+      if (!note) return state;
+
+      // automatic -> forced on -> forced off -> automatic. Automatic is stored
+      // as undefined so the field stays out of exported JSON.
+      const next =
+        note.measureAccent === undefined
+          ? "on"
+          : note.measureAccent === "on"
+            ? "off"
+            : undefined;
+
+      const newNotes = [...part.notes];
+      newNotes[noteIndex] = { ...note, measureAccent: next };
       const newParts = [...state.parts];
       newParts[partIndex] = { ...part, notes: newNotes };
 

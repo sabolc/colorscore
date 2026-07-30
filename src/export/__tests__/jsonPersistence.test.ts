@@ -666,4 +666,86 @@ describe("loadScore", () => {
       );
     });
   });
+
+  describe("measure accent override", () => {
+    it("round-trips both override values", async () => {
+      const score = makeValidScore({
+        parts: [
+          {
+            notes: [
+              {
+                type: "note",
+                pitch: "C",
+                octave: "middle",
+                duration: "quarter",
+                measureAccent: "off",
+              },
+              {
+                type: "note",
+                pitch: "D",
+                octave: "middle",
+                duration: "quarter",
+                measureAccent: "on",
+              },
+              { type: "rest", duration: "quarter", measureAccent: "on" },
+              { type: "note", pitch: "E", octave: "middle", duration: "quarter" },
+            ],
+          },
+        ],
+      });
+
+      const loaded = await loadScore(makeScoreFile(score));
+
+      expect(loaded.parts[0].notes[0].measureAccent).toBe("off");
+      expect(loaded.parts[0].notes[1].measureAccent).toBe("on");
+      expect(loaded.parts[0].notes[2].measureAccent).toBe("on");
+      expect(loaded.parts[0].notes[3].measureAccent).toBeUndefined();
+    });
+
+    it("loads a score file written before the override existed", async () => {
+      const legacy = {
+        title: "Old",
+        renderingMode: "circles",
+        timeSignature: { beats: 2, beatValue: 4 },
+        clef: "treble",
+        parts: [
+          {
+            notes: [
+              { type: "note", pitch: "G", octave: "middle", duration: "quarter" },
+              { type: "rest", duration: "quarter" },
+            ],
+          },
+        ],
+      };
+
+      const loaded = await loadScore(makeFile(JSON.stringify(legacy)));
+
+      for (const element of loaded.parts[0].notes) {
+        expect(element.measureAccent).toBeUndefined();
+      }
+    });
+
+    it("rejects a value that is neither on nor off", async () => {
+      const bad = {
+        ...makeValidScore(),
+        parts: [
+          {
+            notes: [
+              {
+                type: "note",
+                pitch: "C",
+                octave: "middle",
+                duration: "quarter",
+                measureAccent: "maybe",
+              },
+            ],
+          },
+        ],
+      };
+
+      await expect(loadScore(makeFile(JSON.stringify(bad)))).rejects.toThrow(
+        /measureAccent must be/,
+      );
+    });
+  });
 });

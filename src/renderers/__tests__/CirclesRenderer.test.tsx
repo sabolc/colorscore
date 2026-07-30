@@ -386,4 +386,77 @@ describe("CirclesRenderer", () => {
     // A rest, by contrast, draws its hexagon outline
     expect(restDom.querySelectorAll(".rest-symbol")).toHaveLength(1);
   });
+
+  describe("measure accent", () => {
+    const inTwoFour = (notes: Score["parts"][0]["notes"]): Score => ({
+      title: "Test",
+      renderingMode: "circles",
+      timeSignature: { beats: 2, beatValue: 4 },
+      clef: "treble",
+      parts: [{ notes }],
+    });
+
+    it("draws the triangle on measure starts only", () => {
+      // 2/4: quarter + quarter fills a measure, so accents fall on 1 and 3
+      const score = inTwoFour(
+        Array.from({ length: 4 }, () => ({
+          type: "note" as const,
+          pitch: "G" as const,
+          octave: "middle" as const,
+          duration: "quarter" as const,
+        })),
+      );
+      const { container } = render(<CirclesRenderer score={score} selection={null} />);
+
+      expect(container.querySelectorAll(".measure-accent")).toHaveLength(2);
+    });
+
+    it("draws the triangle above the glyph and fills it black", () => {
+      const score = inTwoFour([
+        { type: "note", pitch: "G", octave: "middle", duration: "quarter" },
+      ]);
+      const { container } = render(<CirclesRenderer score={score} selection={null} />);
+
+      const accent = container.querySelector(".measure-accent")!;
+      expect(accent.getAttribute("fill")).toBe("#000000");
+
+      const circle = container.querySelector(".note-circle")!;
+      const glyphTop = Number(circle.getAttribute("cy")) - Number(circle.getAttribute("r"));
+      // Every y in the triangle path sits above the glyph
+      const ys = [...accent.getAttribute("d")!.matchAll(/-?\d+(?:\.\d+)?/g)]
+        .map(Number)
+        .filter((_, i) => i % 2 === 1);
+      for (const y of ys) expect(y).toBeLessThan(glyphTop);
+    });
+
+    it("honours a forced-off override", () => {
+      const score = inTwoFour([
+        {
+          type: "note",
+          pitch: "G",
+          octave: "middle",
+          duration: "quarter",
+          measureAccent: "off",
+        },
+      ]);
+      const { container } = render(<CirclesRenderer score={score} selection={null} />);
+
+      expect(container.querySelectorAll(".measure-accent")).toHaveLength(0);
+    });
+
+    it("never draws a bar line", () => {
+      const score = inTwoFour(
+        Array.from({ length: 6 }, () => ({
+          type: "note" as const,
+          pitch: "G" as const,
+          octave: "middle" as const,
+          duration: "quarter" as const,
+        })),
+      );
+      const { container } = render(<CirclesRenderer score={score} selection={null} />);
+
+      expect(container.querySelectorAll("line")).toHaveLength(0);
+      expect(container.querySelectorAll(".bar-line")).toHaveLength(0);
+    });
+  });
 });

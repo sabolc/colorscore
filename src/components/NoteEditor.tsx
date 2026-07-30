@@ -106,6 +106,13 @@ export function NoteEditor() {
     });
   };
 
+  const handleCycleMeasureAccent = () => {
+    scoreDispatch({
+      type: "CYCLE_MEASURE_ACCENT",
+      payload: { partIndex, noteIndex },
+    });
+  };
+
   const handleToggleSpace = () => {
     scoreDispatch({
       type: "TOGGLE_SPACE",
@@ -207,6 +214,33 @@ export function NoteEditor() {
           ))}
         </select>
       </div>
+
+      {/* Measure accent — three states, so a pressed flag cannot describe it */}
+      <button
+        type="button"
+        className={`${styles.measureAccentButton} ${
+          noteOrRest.measureAccent === "on"
+            ? styles.measureAccentOn
+            : noteOrRest.measureAccent === "off"
+              ? styles.measureAccentOff
+              : ""
+        }`}
+        onClick={handleCycleMeasureAccent}
+        aria-label={`${t.noteEditor.cycleMeasureAccent} — ${
+          noteOrRest.measureAccent === "on"
+            ? t.noteEditor.measureAccentOn
+            : noteOrRest.measureAccent === "off"
+              ? t.noteEditor.measureAccentOff
+              : t.noteEditor.measureAccentAuto
+        }`}
+      >
+        {t.noteEditor.measureAccent} ▼{" "}
+        {noteOrRest.measureAccent === "on"
+          ? t.noteEditor.measureAccentOn
+          : noteOrRest.measureAccent === "off"
+            ? t.noteEditor.measureAccentOff
+            : t.noteEditor.measureAccentAuto}
+      </button>
 
       {/* Grouping Gap Toggle — a plain space, not a rest */}
       <button

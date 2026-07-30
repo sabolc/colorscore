@@ -307,4 +307,60 @@ describe("NoteEditor", () => {
       expect(screen.getByLabelText(GAP_LABEL)).toHaveAttribute("aria-pressed", "true");
     });
   });
+
+  describe("measure accent control", () => {
+    const label = (state: string) =>
+      `Measure-start accent mark: cycle automatic, forced on, forced off — ${state}`;
+
+    it("starts in the automatic state", () => {
+      renderWithSelection(
+        makeScore([{ type: "note", pitch: "C", octave: "middle", duration: "quarter" }]),
+        0,
+        0,
+      );
+
+      expect(screen.getByLabelText(label("auto"))).toBeInTheDocument();
+    });
+
+    it("cycles automatic to on to off and back", () => {
+      renderWithSelection(
+        makeScore([{ type: "note", pitch: "C", octave: "middle", duration: "quarter" }]),
+        0,
+        0,
+      );
+
+      fireEvent.click(screen.getByLabelText(label("auto")));
+      expect(screen.getByLabelText(label("on"))).toBeInTheDocument();
+
+      fireEvent.click(screen.getByLabelText(label("on")));
+      expect(screen.getByLabelText(label("off"))).toBeInTheDocument();
+
+      fireEvent.click(screen.getByLabelText(label("off")));
+      expect(screen.getByLabelText(label("auto"))).toBeInTheDocument();
+    });
+
+    it("renders for a selected rest", () => {
+      renderWithSelection(makeScore([{ type: "rest", duration: "quarter" }]), 0, 0);
+
+      expect(screen.getByLabelText(label("auto"))).toBeEnabled();
+    });
+
+    it("is a separate control from the gap and line-break toggles", () => {
+      renderWithSelection(
+        makeScore([{ type: "note", pitch: "C", octave: "middle", duration: "quarter" }]),
+        0,
+        0,
+      );
+
+      const accent = screen.getByLabelText(label("auto"));
+      expect(accent).not.toBe(
+        screen.getByLabelText("Toggle line break after this note"),
+      );
+      expect(accent).not.toBe(
+        screen.getByLabelText(
+          "Toggle a grouping gap after this note (spacing only, not a rest)",
+        ),
+      );
+    });
+  });
 });

@@ -3,7 +3,12 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { computeCirclesLayout } from "../circlesLayout";
+import {
+  computeCirclesLayout,
+  ACCENT_GAP,
+  ACCENT_HEIGHT,
+} from "../circlesLayout";
+import { computeLayout as computeStaffLayout } from "../staffLayout";
 import type { Score } from "../../models/types";
 
 const makeScore = (notes: Score["parts"][0]["notes"] = []): Score => ({
@@ -355,6 +360,108 @@ describe("computeCirclesLayout", () => {
       expect(
         gapped.rows[0].circles[1].cx - plain.rows[0].circles[1].cx,
       ).toBeCloseTo(plain.config.circleSpacing / 2);
+    });
+  });
+
+  describe("measure accent", () => {
+    const inTime = (notes: Score["parts"][0]["notes"], beats: number, beatValue: number): Score => ({
+      title: "Test",
+      renderingMode: "circles",
+      timeSignature: { beats, beatValue },
+      clef: "treble",
+      parts: [{ notes }],
+    });
+    const accents = (score: Score) =>
+      computeCirclesLayout(score, { canvasWidth: 4000 })
+        .rows.flatMap((r) => r.circles)
+        .map((c) => c.hasMeasureAccent);
+
+    it("marks each measure start in 2/4 — the Csiga-biga shape", () => {
+      // 4 eighths (2 beats = measure 1), then 2 quarters (1 beat each)
+      const notes = [
+        ...Array.from({ length: 4 }, () => ({
+          type: "note" as const, pitch: "G" as const, octave: "middle" as const, duration: "eighth" as const,
+        })),
+        { type: "note" as const, pitch: "E" as const, octave: "middle" as const, duration: "quarter" as const },
+        { type: "note" as const, pitch: "E" as const, octave: "middle" as const, duration: "quarter" as const },
+      ];
+
+      expect(accents(inTime(notes, 2, 4))).toEqual([true, false, false, false, true, false]);
+    });
+
+    it("marks each measure start in 4/4 with mixed durations", () => {
+      const notes = [
+        { type: "note" as const, pitch: "C" as const, octave: "middle" as const, duration: "half" as const },
+        { type: "note" as const, pitch: "D" as const, octave: "middle" as const, duration: "quarter" as const },
+        { type: "rest" as const, duration: "quarter" as const },
+        { type: "note" as const, pitch: "E" as const, octave: "middle" as const, duration: "whole" as const },
+        { type: "note" as const, pitch: "F" as const, octave: "middle" as const, duration: "quarter" as const },
+      ];
+
+      expect(accents(inTime(notes, 4, 4))).toEqual([true, false, false, true, true]);
+    });
+
+    it("lets a forced override win in both directions", () => {
+      const notes = [
+        { type: "note" as const, pitch: "C" as const, octave: "middle" as const, duration: "quarter" as const, measureAccent: "off" as const },
+        { type: "note" as const, pitch: "D" as const, octave: "middle" as const, duration: "quarter" as const, measureAccent: "on" as const },
+        { type: "note" as const, pitch: "E" as const, octave: "middle" as const, duration: "quarter" as const },
+      ];
+
+      // Derived would be [true, false, true] in 2/4; the overrides flip the first two
+      expect(accents(inTime(notes, 2, 4))).toEqual([false, true, true]);
+    });
+
+    it("agrees with the staff renderer on where measures start", () => {
+      const notes = [
+        { type: "note" as const, pitch: "C" as const, octave: "middle" as const, duration: "quarter" as const },
+        { type: "note" as const, pitch: "D" as const, octave: "middle" as const, duration: "quarter" as const },
+        { type: "note" as const, pitch: "E" as const, octave: "middle" as const, duration: "half" as const },
+        { type: "note" as const, pitch: "F" as const, octave: "middle" as const, duration: "quarter" as const },
+        { type: "note" as const, pitch: "G" as const, octave: "middle" as const, duration: "quarter" as const },
+      ];
+      const score = inTime(notes, 4, 4);
+
+      // The staff layout closes a measure where the circles layout opens the next
+      const staff = computeStaffLayout(score, { canvasWidth: 4000 });
+      const barLineCount = staff.systems.reduce((n, s) => n + s.barLines.length, 0);
+      const accentCount = accents(score).filter(Boolean).length;
+
+      // 4 beats then 2 beats: one completed measure, two measure starts
+      expect(barLineCount).toBe(1);
+      expect(accentCount).toBe(2);
+    });
+
+    it("does not move or resize any symbol", () => {
+      const notes = Array.from({ length: 8 }, () => ({
+        type: "note" as const, pitch: "C" as const, octave: "middle" as const, duration: "quarter" as const,
+      }));
+      const withAccents = computeCirclesLayout(inTime(notes, 2, 4), { canvasWidth: 4000 });
+      const noAccents = computeCirclesLayout(
+        inTime(notes.map((n) => ({ ...n, measureAccent: "off" as const })), 2, 4),
+        { canvasWidth: 4000 },
+      );
+
+      const a = withAccents.rows.flatMap((r) => r.circles);
+      const b = noAccents.rows.flatMap((r) => r.circles);
+      expect(a).toHaveLength(b.length);
+      a.forEach((sym, i) => {
+        expect(sym.cx).toBeCloseTo(b[i].cx);
+        expect(sym.cy).toBeCloseTo(b[i].cy);
+        expect(sym.radius).toBe(b[i].radius);
+        expect(sym.width).toBeCloseTo(b[i].width);
+      });
+      expect(withAccents.totalHeight).toBe(noAccents.totalHeight);
+    });
+
+    it("keeps the triangle inside the canvas", () => {
+      const notes = [{ type: "note" as const, pitch: "C" as const, octave: "middle" as const, duration: "quarter" as const }];
+      const layout = computeCirclesLayout(inTime(notes, 2, 4), { canvasWidth: 4000 });
+      const symbol = layout.rows[0].circles[0];
+
+      const triangleTop = symbol.cy - symbol.radius - ACCENT_GAP - ACCENT_HEIGHT;
+      expect(symbol.hasMeasureAccent).toBe(true);
+      expect(triangleTop).toBeGreaterThanOrEqual(0);
     });
   });
 });

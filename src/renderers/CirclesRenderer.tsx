@@ -12,6 +12,7 @@ import {
   computeCirclesLayout,
   glyphPath,
   glyphHalfPaths,
+  measureAccentPath,
   type CircleLayout,
   type Glyph,
 } from "./circlesLayout";
@@ -175,6 +176,14 @@ function renderSymbol(
       style={{ cursor: "pointer" }}
       data-testid={testId}
     >
+      {/* Measure accent — the ULWILA stress mark that replaces bar lines */}
+      {symbol.hasMeasureAccent && (
+        <path
+          d={measureAccentPath(symbol)}
+          fill="#000000"
+          className="measure-accent"
+        />
+      )}
       {symbol.glyphs.map((glyph, i) => (
         <React.Fragment key={`glyph-${i}`}>
           {isRest

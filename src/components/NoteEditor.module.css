@@ -180,6 +180,39 @@
   color: #0066cc;
 }
 
+.measureAccentButton {
+  padding: 0.5rem 1rem;
+  min-width: 44px;
+  min-height: 44px;
+  border: 2px solid #ccc;
+  border-radius: 4px;
+  background: white;
+  color: #333;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.measureAccentButton:hover {
+  border-color: #999;
+  background: #f0f0f0;
+}
+
+/* Forced on and forced off must look different from each other and from auto */
+.measureAccentOn {
+  border-color: #0066cc;
+  background: #e8f0fe;
+  color: #0066cc;
+}
+
+.measureAccentOff {
+  border-color: #b00020;
+  background: #fdecee;
+  color: #b00020;
+  text-decoration: line-through;
+}
+
 .spaceButton {
   padding: 0.5rem 1rem;
   min-width: 44px;

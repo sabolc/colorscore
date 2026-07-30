@@ -24,6 +24,9 @@
   border-bottom: 1px solid var(--color-border);
   padding: var(--spacing-md);
   overflow-y: auto;
+  /* A grid item's default min-height is its content, which would make this
+     tall panel dictate the row heights instead of scrolling inside them. */
+  min-height: 0;
 }
 
 .editor-panel {
@@ -32,12 +35,14 @@
   border-bottom: 1px solid var(--color-border);
   padding: var(--spacing-md);
   overflow-y: auto;
+  min-height: 0;
 }
 
 .score-canvas-slot {
   grid-area: score-canvas;
   background-color: var(--color-score-bg);
   overflow: auto;
+  min-height: 0;
 }
 
 /* Desktop layout: >=1024px side-by-side */
@@ -58,6 +63,26 @@
 
   .editor-panel {
     border-bottom: none;
+    border-right: 1px solid var(--color-border);
+  }
+}
+
+/* Wide desktop: >=1200px puts the editor in its own column beside the note
+   input rather than under it. Stacked, the input panel is tall enough to push
+   the editor to the bottom of the viewport, where it is easy to miss and falls
+   below the fold on a short window. Both panels are too tall to share one
+   column, so they get one each; the canvas renders at whatever width is left
+   (see useContainerWidth in ScoreCanvas). */
+@media (min-width: 1200px) {
+  .app-shell {
+    grid-template-columns: 300px 300px 1fr;
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      "toolbar    toolbar toolbar"
+      "note-input editor  score-canvas";
+  }
+
+  .editor-panel {
     border-right: 1px solid var(--color-border);
   }
 }

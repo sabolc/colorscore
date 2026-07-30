@@ -10,6 +10,12 @@ export type Octave = "lower" | "middle" | "upper";
 
 export type Duration = "whole" | "half" | "quarter" | "eighth" | "sixteenth";
 
+/**
+ * Manual override of the derived measure accent: force the mark on, or force
+ * it off. Absent means "derive it from the time signature".
+ */
+export type MeasureAccent = "on" | "off";
+
 export type RenderingMode = "staff" | "circles";
 
 export type Clef = "treble" | "bass";
@@ -27,6 +33,13 @@ export interface Note {
   lyric?: string;
   accented?: boolean;
   /**
+   * Manual override for the measure accent — the black triangle that ULWILA
+   * uses instead of bar lines. Absent means the accent is derived from the
+   * time signature. Unrelated to `accented`, which marks an altered/sharp
+   * pitch drawn as a two-color split circle.
+   */
+  measureAccent?: MeasureAccent;
+  /**
    * Visual grouping gap after this note, as published ULWILA scores use to
    * separate words and phrases. Purely typographic: it carries no duration,
    * is not a rest, and does not affect beat counting.
@@ -38,6 +51,13 @@ export interface Note {
 export interface Rest {
   type: "rest";
   duration: Duration;
+  /**
+   * Manual override for the measure accent — the black triangle that ULWILA
+   * uses instead of bar lines. Absent means the accent is derived from the
+   * time signature. Unrelated to `accented`, which marks an altered/sharp
+   * pitch drawn as a two-color split circle.
+   */
+  measureAccent?: MeasureAccent;
   /** Visual grouping gap after this rest. See {@link Note.spaceAfter}. */
   spaceAfter?: boolean;
   lineBreakAfter?: boolean;

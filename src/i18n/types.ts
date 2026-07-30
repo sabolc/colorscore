@@ -54,6 +54,11 @@ export interface Translations {
     setPitchTo: string;
     space: string;
     toggleSpace: string;
+    measureAccent: string;
+    measureAccentAuto: string;
+    measureAccentOn: string;
+    measureAccentOff: string;
+    cycleMeasureAccent: string;
     lineBreak: string;
     toggleLineBreak: string;
     delete: string;

@@ -6,14 +6,15 @@
  */
 
 import type {
-  Score,
-  Pitch,
-  Octave,
-  Duration,
-  RenderingMode,
   Clef,
+  Duration,
+  MeasureAccent,
   NoteOrRest,
+  Octave,
   Part,
+  Pitch,
+  RenderingMode,
+  Score,
 } from "../models/types";
 
 const VALID_PITCHES: readonly Pitch[] = [
@@ -134,6 +135,17 @@ function validateNoteOrRest(
       throw new Error(`${prefix}: accented must be a boolean if provided`);
     }
 
+    // Validate optional measureAccent
+    if (
+      obj.measureAccent !== undefined &&
+      obj.measureAccent !== "on" &&
+      obj.measureAccent !== "off"
+    ) {
+      throw new Error(
+        `${prefix}: measureAccent must be "on" or "off" if provided`,
+      );
+    }
+
     // Validate optional spaceAfter
     if (obj.spaceAfter !== undefined && typeof obj.spaceAfter !== "boolean") {
       throw new Error(`${prefix}: spaceAfter must be a boolean if provided`);
@@ -157,6 +169,10 @@ function validateNoteOrRest(
     if (obj.accented !== undefined) {
       (note as { accented: boolean }).accented = obj.accented as boolean;
     }
+    if (obj.measureAccent !== undefined) {
+      (note as { measureAccent: MeasureAccent }).measureAccent =
+        obj.measureAccent as MeasureAccent;
+    }
     if (obj.spaceAfter !== undefined) {
       (note as { spaceAfter: boolean }).spaceAfter = obj.spaceAfter as boolean;
     }
@@ -178,6 +194,17 @@ function validateNoteOrRest(
       );
     }
 
+    // Validate optional measureAccent
+    if (
+      obj.measureAccent !== undefined &&
+      obj.measureAccent !== "on" &&
+      obj.measureAccent !== "off"
+    ) {
+      throw new Error(
+        `${prefix}: measureAccent must be "on" or "off" if provided`,
+      );
+    }
+
     // Validate optional spaceAfter
     if (obj.spaceAfter !== undefined && typeof obj.spaceAfter !== "boolean") {
       throw new Error(`${prefix}: spaceAfter must be a boolean if provided`);
@@ -193,6 +220,10 @@ function validateNoteOrRest(
       duration: obj.duration as Duration,
     };
 
+    if (obj.measureAccent !== undefined) {
+      (rest as { measureAccent: MeasureAccent }).measureAccent =
+        obj.measureAccent as MeasureAccent;
+    }
     if (obj.spaceAfter !== undefined) {
       (rest as { spaceAfter: boolean }).spaceAfter = obj.spaceAfter as boolean;
     }

@@ -83,6 +83,12 @@ export interface CircleLayout {
   noteIndex: number;
   /** Whether this is a rest (uncolored, outline-only glyphs) */
   isRest: boolean;
+  /**
+   * Whether this symbol starts a measure and so carries the accent triangle.
+   * Deliberately not called `accented` — that property means an altered/sharp
+   * pitch, which is a different thing drawn a different way.
+   */
+  hasMeasureAccent: boolean;
   /** Octave indicator for dot rendering */
   octave?: Octave;
   /** Lyric text, if any */
@@ -131,6 +137,18 @@ const HEXAGON_WIDTH_RATIO = Math.sqrt(3);
  * no duration and is never drawn — only advanced past.
  */
 export const GAP_BEATS = 0.5;
+
+/**
+ * Geometry of the measure accent — the solid black triangle ULWILA places above
+ * the first note of a measure, in place of a bar line.
+ */
+export const ACCENT_WIDTH = 14;
+export const ACCENT_HEIGHT = 12;
+/** Clearance between the triangle's tip and the top of the glyph below it. */
+export const ACCENT_GAP = 4;
+
+/** Tolerance for the beat accumulator, which sums fractional durations. */
+const BEAT_EPSILON = 1e-9;
 
 /**
  * Maps a duration to the number of quarter-note beat slots it occupies.
@@ -184,6 +202,11 @@ export function computeCirclesLayout(
 
   const maxX = fullConfig.canvasWidth - fullConfig.marginLeft;
   const gapWidth = GAP_BEATS * fullConfig.circleSpacing;
+  // Measure length in quarter-note beats, matching how staffLayout places bar
+  // lines, so the two rendering modes agree on where measures start.
+  const beatsPerMeasure =
+    score.timeSignature.beats * (4 / score.timeSignature.beatValue);
+  let beatsElapsed = 0;
   // Gap owed by the previous element. Held rather than applied immediately so
   // that a gap at the end of a row is dropped instead of indenting the next one.
   let pendingGap = 0;
@@ -202,9 +225,27 @@ export function computeCirclesLayout(
       gapBefore = 0;
     }
 
+    // The accent falls on whatever element begins a measure. An override on the
+    // element wins, which is what a song starting on an upbeat needs.
+    const startsMeasure =
+      beatsPerMeasure > 0 &&
+      Math.abs(beatsElapsed % beatsPerMeasure) < BEAT_EPSILON;
+    const hasMeasureAccent =
+      note.measureAccent === undefined ? startsMeasure : note.measureAccent === "on";
+    beatsElapsed += durationToBeats(note.duration);
+
     currentX += gapBefore;
     currentRow.push(
-      computeSymbol(note, currentX, spanWidth, currentRowY, baseRadius, partIndex, noteIndex)
+      computeSymbol(
+        note,
+        currentX,
+        spanWidth,
+        currentRowY,
+        baseRadius,
+        partIndex,
+        noteIndex,
+        hasMeasureAccent
+      )
     );
     currentX += spanWidth;
     pendingGap = note.spaceAfter ? gapWidth : 0;
@@ -232,6 +273,23 @@ export function computeCirclesLayout(
 
   const lastRow = rows[rows.length - 1];
   const totalHeight = lastRow.startY + baseRadius + fullConfig.lyricOffset + 20;
+  // The triangle is drawn above the row. Symbols are never moved to make room
+  // for it — the default top margin already clears it — but assert the room is
+  // there so a smaller margin cannot silently clip the accents.
+  const accentTop =
+    fullConfig.marginTop + baseRadius - baseRadius - ACCENT_GAP - ACCENT_HEIGHT;
+  if (accentTop < 0) {
+    // Shift every row down by the shortfall, preserving relative spacing.
+    const shortfall = -accentTop;
+    for (const row of rows) {
+      row.startY += shortfall;
+      for (const symbol of row.circles) {
+        symbol.cy += shortfall;
+        for (const glyph of symbol.glyphs) glyph.cy += shortfall;
+      }
+    }
+    return { rows, config: fullConfig, totalHeight: totalHeight + shortfall };
+  }
 
   return {
     rows,
@@ -250,7 +308,8 @@ function computeSymbol(
   rowY: number,
   baseRadius: number,
   partIndex: number,
-  noteIndex: number
+  noteIndex: number,
+  hasMeasureAccent: boolean
 ): CircleLayout {
   const isRest = note.type === "rest";
   const glyphs = buildGlyphs(note.duration, isRest, baseRadius);
@@ -276,6 +335,7 @@ function computeSymbol(
     partIndex,
     noteIndex,
     isRest,
+    hasMeasureAccent,
     octave: note.type === "note" ? note.octave : undefined,
     lyric: note.type === "note" ? note.lyric : undefined,
   };
@@ -365,6 +425,19 @@ export function glyphPath(glyph: Glyph): string {
       );
     }
   }
+}
+
+/**
+ * SVG path for the measure accent triangle above a symbol: solid, pointing
+ * down, centred over the symbol's first glyph.
+ */
+export function measureAccentPath(symbol: CircleLayout): string {
+  const first = symbol.glyphs[0];
+  const cx = first ? first.cx : symbol.cx;
+  const bottom = symbol.cy - symbol.radius - ACCENT_GAP;
+  const top = bottom - ACCENT_HEIGHT;
+  const halfW = ACCENT_WIDTH / 2;
+  return `M ${cx - halfW} ${top} L ${cx + halfW} ${top} L ${cx} ${bottom} Z`;
 }
 
 /**
