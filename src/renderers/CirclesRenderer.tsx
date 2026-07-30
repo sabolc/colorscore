@@ -2,14 +2,24 @@
  * ULWILA Color Score Editor - Circles Renderer
  *
  * React SVG component that renders Mode B (pure color circles without staff lines).
- * Each note is displayed as a colored circle using the ULWILA color system.
+ * Each note is displayed with its ULWILA rhythm glyph, filled with the ULWILA
+ * color of its pitch. See `circlesLayout.ts` for the glyph vocabulary.
  */
 
 import React from "react";
 import type { Score, Pitch } from "../models/types";
-import { computeCirclesLayout, type CircleLayout } from "./circlesLayout";
-import { ULWILA_COLORS, getAccentedColors } from "../constants/colors";
+import {
+  computeCirclesLayout,
+  glyphPath,
+  glyphHalfPaths,
+  type CircleLayout,
+  type Glyph,
+} from "./circlesLayout";
+import { ULWILA_COLORS, getAccentedColors, getOctaveDotStyle } from "../constants/colors";
 import { isNoteSelected, type SelectionState } from "../store/selectionReducer";
+
+/** Outline color for uncolored rest glyphs. */
+const REST_STROKE = "#333333";
 
 export interface CirclesRendererProps {
   score: Score;
@@ -19,187 +29,172 @@ export interface CirclesRendererProps {
 }
 
 /**
- * Renders a circle as two vertical semicircles for accented (sharp) notes.
+ * Renders a glyph split into two vertical halves, for accented (sharp) notes.
+ * The left half uses the note's own color, the right half the neighbor's.
  */
-function renderSemicircle(
-  cx: number,
-  cy: number,
-  r: number,
+function renderSplitGlyph(
+  glyph: Glyph,
   leftColor: string,
   rightColor: string,
   rightIsYellow: boolean
 ): React.ReactNode {
-  // Left semicircle: arc bulging left (sweep=0, large-arc=1)
-  const leftPath = `M ${cx} ${cy - r} A ${r} ${r} 0 1 0 ${cx} ${cy + r} Z`;
-  // Right semicircle: arc bulging right (sweep=1, large-arc=1)
-  const rightPath = `M ${cx} ${cy - r} A ${r} ${r} 0 1 1 ${cx} ${cy + r} Z`;
+  const { left, right } = glyphHalfPaths(glyph);
   const strokeColor = rightIsYellow ? "#333333" : leftColor;
   const strokeW = rightIsYellow ? 2 : 1;
   return (
     <>
-      <path d={leftPath} fill={leftColor} stroke="none" className="note-circle" />
-      <path d={rightPath} fill={rightColor} stroke="none" className="note-circle" />
-      {/* Full circle outline */}
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke={strokeColor} strokeWidth={strokeW} />
+      <path d={left} fill={leftColor} stroke="none" className="note-circle" />
+      <path d={right} fill={rightColor} stroke="none" className="note-circle" />
+      {/* Outline of the full glyph */}
+      <path d={glyphPath(glyph)} fill="none" stroke={strokeColor} strokeWidth={strokeW} />
     </>
   );
 }
 
 /**
- * Renders a single circle (or sub-circles for eighth/sixteenth notes).
+ * Renders one colored note glyph.
  */
-function renderCircleElement(
-  circle: CircleLayout,
+function renderNoteGlyph(glyph: Glyph, pitch: Pitch, accented: boolean): React.ReactNode {
+  const color = ULWILA_COLORS[pitch];
+  const isYellow = pitch === "H";
+
+  if (accented) {
+    const { left, right } = getAccentedColors(pitch);
+    const rightIsYellow = right === ULWILA_COLORS.H;
+    return renderSplitGlyph(glyph, left, right, rightIsYellow);
+  }
+
+  const stroke = isYellow ? "#333333" : color;
+  const strokeWidth = isYellow ? 2 : 1;
+
+  // Plain circles stay <circle> elements; everything else is a path.
+  if (glyph.kind === "circle") {
+    return (
+      <circle
+        cx={glyph.cx}
+        cy={glyph.cy}
+        r={glyph.radius}
+        fill={color}
+        stroke={stroke}
+        strokeWidth={strokeWidth}
+        className="note-circle"
+        data-pitch={pitch}
+        data-glyph={glyph.kind}
+      />
+    );
+  }
+
+  return (
+    <path
+      d={glyphPath(glyph)}
+      fill={color}
+      stroke={stroke}
+      strokeWidth={strokeWidth}
+      className="note-circle"
+      data-pitch={pitch}
+      data-glyph={glyph.kind}
+    />
+  );
+}
+
+/**
+ * Renders one uncolored rest glyph (outline only).
+ */
+function renderRestGlyph(glyph: Glyph): React.ReactNode {
+  return (
+    <path
+      d={glyphPath(glyph)}
+      fill="none"
+      stroke={REST_STROKE}
+      strokeWidth={2}
+      className="rest-symbol"
+      data-glyph={glyph.kind}
+    />
+  );
+}
+
+/**
+ * Renders a single note or rest symbol with its octave dots, selection ring,
+ * lyric, and line-break indicator.
+ */
+function renderSymbol(
+  symbol: CircleLayout,
   score: Score,
   selection: CirclesRendererProps["selection"],
   onNoteClick: CirclesRendererProps["onNoteClick"]
 ): React.ReactNode {
-  if (circle.isRest) {
-    // Rests are empty gaps; render nothing visible
-    return null;
-  }
+  const part = score.parts[symbol.partIndex];
+  const noteOrRest = part?.notes[symbol.noteIndex];
+  if (!noteOrRest) return null;
 
-  const part = score.parts[circle.partIndex];
-  const noteOrRest = part?.notes[circle.noteIndex];
-  if (!noteOrRest || noteOrRest.type === "rest") return null;
-
-  const note = noteOrRest;
-  const pitch = note.pitch as Pitch;
-  const color = ULWILA_COLORS[pitch];
-  const isYellow = pitch === "H";
-  const isSelected = isNoteSelected(selection, circle.partIndex, circle.noteIndex);
+  const isRest = noteOrRest.type === "rest";
+  const isSelected = isNoteSelected(selection, symbol.partIndex, symbol.noteIndex);
 
   const handleClick = (e: React.MouseEvent) => {
     if (onNoteClick) {
-      onNoteClick(circle.partIndex, circle.noteIndex, e);
+      onNoteClick(symbol.partIndex, symbol.noteIndex, e);
     }
   };
 
-  // Determine octave dot rendering
-  const renderOctaveDot = (cx: number, cy: number, radius: number) => {
-    if (!circle.octave || circle.octave === "middle") return null;
-    const dotRadius = Math.max(2, radius * 0.15);
-    const dotColor = circle.octave === "lower" ? "#000000" : "#FFFFFF";
+  // Octave dot in the center of each colored glyph (lower = black, upper = white).
+  // A halo ring keeps the dot visible when it matches the note color too closely,
+  // e.g. the black lower-octave dot on the near-black C.
+  const renderOctaveDot = (glyph: Glyph, key: string) => {
+    if (isRest || !symbol.octave) return null;
+    const dotStyle = getOctaveDotStyle((noteOrRest as { pitch: Pitch }).pitch, symbol.octave);
+    if (!dotStyle) return null;
+
+    const haloWidth = dotStyle.halo ? Math.max(1.5, glyph.radius * 0.09) : 0;
+    // Keep the dot plus its halo inside the glyph.
+    const maxRadius = glyph.width * 0.4 - haloWidth / 2;
+    const dotRadius = Math.min(Math.max(2, glyph.radius * 0.15), maxRadius);
+
     return (
       <circle
-        cx={cx}
-        cy={cy}
+        key={key}
+        cx={glyph.cx}
+        cy={glyph.cy}
         r={dotRadius}
-        fill={dotColor}
+        fill={dotStyle.fill}
+        stroke={dotStyle.halo ?? undefined}
+        strokeWidth={dotStyle.halo ? haloWidth : undefined}
         className="octave-dot"
-        data-octave={circle.octave}
+        data-octave={symbol.octave}
       />
     );
   };
 
-  // If we have sub-circles (eighth or sixteenth notes), render those instead
-  if (circle.subCircles && circle.subCircles.length > 0) {
-    return (
-      <g
-        key={`circle-${circle.partIndex}-${circle.noteIndex}`}
-        onClick={handleClick}
-        style={{ cursor: "pointer" }}
-        data-testid={`note-circle-${circle.partIndex}-${circle.noteIndex}`}
-      >
-        {circle.subCircles.map((sub, i) => (
-          <React.Fragment key={`sub-${i}`}>
-            {note.accented ? (
-              (() => {
-                const { left, right } = getAccentedColors(pitch);
-                const rightIsYellow = right === ULWILA_COLORS.H;
-                return renderSemicircle(sub.cx, sub.cy, sub.radius, left, right, rightIsYellow);
-              })()
-            ) : (
-              <circle
-                cx={sub.cx}
-                cy={sub.cy}
-                r={sub.radius}
-                fill={color}
-                stroke={isYellow ? "#333333" : color}
-                strokeWidth={isYellow ? 2 : 1}
-                className="note-circle"
-                data-pitch={pitch}
-              />
-            )}
-            {renderOctaveDot(sub.cx, sub.cy, sub.radius)}
-          </React.Fragment>
-        ))}
-        {/* Selection highlight ring around the group */}
-        {isSelected && (
-          <circle
-            cx={circle.cx}
-            cy={circle.cy}
-            r={circle.radius + 8}
-            fill="none"
-            stroke="blue"
-            strokeWidth={2}
-            className="selection-ring"
-          />
-        )}
-        {/* Lyric text */}
-        {circle.lyric && (
-          <text
-            x={circle.cx}
-            y={circle.cy + circle.radius + 20}
-            textAnchor="middle"
-            fontSize="12"
-            fill="#333"
-            className="lyric-text"
-          >
-            {circle.lyric}
-          </text>
-        )}
-        {/* Line break indicator */}
-        {note.lineBreakAfter && (
-          <text
-            x={circle.cx + circle.radius + 8}
-            y={circle.cy - circle.radius}
-            fontSize="12"
-            fill="#999"
-            textAnchor="start"
-            className="line-break-indicator"
-          >
-            {"↵"}
-          </text>
-        )}
-      </g>
-    );
-  }
+  const testId = isRest
+    ? `rest-symbol-${symbol.partIndex}-${symbol.noteIndex}`
+    : `note-circle-${symbol.partIndex}-${symbol.noteIndex}`;
 
-  // Standard single circle (quarter, half, whole)
   return (
     <g
-      key={`circle-${circle.partIndex}-${circle.noteIndex}`}
+      key={`symbol-${symbol.partIndex}-${symbol.noteIndex}`}
       onClick={handleClick}
       style={{ cursor: "pointer" }}
-      data-testid={`note-circle-${circle.partIndex}-${circle.noteIndex}`}
+      data-testid={testId}
     >
-      {note.accented ? (
-        (() => {
-          const { left, right } = getAccentedColors(pitch);
-          const rightIsYellow = right === ULWILA_COLORS.H;
-          return renderSemicircle(circle.cx, circle.cy, circle.radius, left, right, rightIsYellow);
-        })()
-      ) : (
-        <circle
-          cx={circle.cx}
-          cy={circle.cy}
-          r={circle.radius}
-          fill={color}
-          stroke={isYellow ? "#333333" : color}
-          strokeWidth={isYellow ? 2 : 1}
-          className="note-circle"
-          data-pitch={pitch}
-        />
-      )}
-      {/* Octave dot */}
-      {renderOctaveDot(circle.cx, circle.cy, circle.radius)}
-      {/* Selection highlight ring */}
+      {symbol.glyphs.map((glyph, i) => (
+        <React.Fragment key={`glyph-${i}`}>
+          {isRest
+            ? renderRestGlyph(glyph)
+            : renderNoteGlyph(
+                glyph,
+                (noteOrRest as { pitch: Pitch }).pitch,
+                Boolean((noteOrRest as { accented?: boolean }).accented)
+              )}
+          {renderOctaveDot(glyph, `dot-${i}`)}
+        </React.Fragment>
+      ))}
+      {/* Selection highlight ring around the whole symbol */}
       {isSelected && (
-        <circle
-          cx={circle.cx}
-          cy={circle.cy}
-          r={circle.radius + 4}
+        <rect
+          x={symbol.cx - symbol.width / 2 - 5}
+          y={symbol.cy - symbol.radius - 5}
+          width={symbol.width + 10}
+          height={symbol.radius * 2 + 10}
+          rx={6}
           fill="none"
           stroke="blue"
           strokeWidth={2}
@@ -207,23 +202,23 @@ function renderCircleElement(
         />
       )}
       {/* Lyric text */}
-      {circle.lyric && (
+      {symbol.lyric && (
         <text
-          x={circle.cx}
-          y={circle.cy + circle.radius + 20}
+          x={symbol.cx}
+          y={symbol.cy + symbol.radius + 20}
           textAnchor="middle"
           fontSize="12"
           fill="#333"
           className="lyric-text"
         >
-          {circle.lyric}
+          {symbol.lyric}
         </text>
       )}
       {/* Line break indicator */}
-      {note.lineBreakAfter && (
+      {noteOrRest.lineBreakAfter && (
         <text
-          x={circle.cx + circle.radius + 6}
-          y={circle.cy - circle.radius}
+          x={symbol.cx + symbol.width / 2 + 6}
+          y={symbol.cy - symbol.radius}
           fontSize="12"
           fill="#999"
           textAnchor="start"
@@ -239,7 +234,7 @@ function renderCircleElement(
 /**
  * CirclesRenderer component.
  *
- * Renders a musical score as colored circles in a horizontal layout (ULWILA Mode B).
+ * Renders a musical score as ULWILA rhythm glyphs in a horizontal layout (Mode B).
  */
 const CirclesRenderer: React.FC<CirclesRendererProps> = ({
   score,
@@ -258,8 +253,8 @@ const CirclesRenderer: React.FC<CirclesRendererProps> = ({
     >
       {layout.rows.map((row, rowIndex) => (
         <g key={`row-${rowIndex}`} className="circles-row">
-          {row.circles.map((circle) =>
-            renderCircleElement(circle, score, selection, onNoteClick)
+          {row.circles.map((symbol) =>
+            renderSymbol(symbol, score, selection, onNoteClick)
           )}
         </g>
       ))}

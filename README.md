@@ -33,6 +33,22 @@ The same 7 colors are reused across octaves. Octaves are distinguished by a smal
 | Main/middle octave | No dot (plain colored circle) |
 | Upper octave | Small **white** dot in center |
 
+Where the dot would blend into the note color, it is ringed with a contrasting halo so it stays readable — a white ring around the black dot on the near-black C, a dark ring around the white dot on the yellow H. The source figure draws the low C exactly this way.
+
+### Note Durations (Rhythm)
+
+Duration is shown by a fixed set of geometric shapes, all the same height as the standard quarter-note circle. This is the ULWILA rhythm table (Vető–Ullrich 1997; Bakos Anita 2014, *Az Ulwila – színes kotta módszer*, 2. táblázat):
+
+| Duration | Note shape | Rest shape | Span |
+|---|---|---|---|
+| Whole (egész) | Four circles joined | Four empty hexagons | 4 beats |
+| Half (fél) | Two circles joined | Two empty hexagons | 2 beats |
+| Quarter (negyed) | One circle | One empty hexagon | 1 beat |
+| Eighth (nyolcad) | One **half circle**, flat edge on the right | Half hexagon, vertical edge on the right | ½ beat |
+| Sixteenth (tizenhatod) | One **narrow vertical bar** | Empty narrow bar | ¼ beat |
+
+Each shape takes horizontal space proportional to its duration, so two eighths — or four sixteenths — fill exactly one beat. Notes are filled with the pitch's color; rests use the same shapes uncolored (outline only).
+
 ### Accented Notes (Sharps)
 
 Black piano keys (sharps/flats) are represented as two-color semicircle noteheads — the left half uses the lower neighbor's ULWILA color, the right half uses the upper neighbor's color. For example, C♯ is rendered as a half-black, half-brown circle.

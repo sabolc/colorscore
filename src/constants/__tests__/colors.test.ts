@@ -5,7 +5,13 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { ULWILA_COLORS, PITCH_NAMES, NOTE_LABELS } from "../colors";
+import {
+  ULWILA_COLORS,
+  PITCH_NAMES,
+  NOTE_LABELS,
+  contrastRatio,
+  getOctaveDotStyle,
+} from "../colors";
 
 describe("ULWILA_COLORS", () => {
   it("should have exact hex values for all 7 pitches", () => {
@@ -65,5 +71,73 @@ describe("NOTE_LABELS", () => {
   it("should have exactly 7 labels", () => {
     const labelKeys = Object.keys(NOTE_LABELS);
     expect(labelKeys).toHaveLength(7);
+  });
+});
+
+describe("contrastRatio", () => {
+  it("is 21 for black against white and 1 for a color against itself", () => {
+    expect(contrastRatio("#000000", "#FFFFFF")).toBeCloseTo(21, 1);
+    expect(contrastRatio("#DC143C", "#DC143C")).toBeCloseTo(1, 5);
+  });
+
+  it("is symmetric", () => {
+    expect(contrastRatio("#1A1A1A", "#FFD700")).toBeCloseTo(
+      contrastRatio("#FFD700", "#1A1A1A"),
+      5
+    );
+  });
+});
+
+describe("getOctaveDotStyle", () => {
+  it("returns no dot for the middle octave", () => {
+    for (const pitch of PITCH_NAMES) {
+      expect(getOctaveDotStyle(pitch, "middle")).toBeNull();
+    }
+  });
+
+  it("gives the low C a white halo so the black dot stays visible", () => {
+    const style = getOctaveDotStyle("C", "lower");
+    expect(style).toEqual({ fill: "#000000", halo: "#FFFFFF" });
+  });
+
+  it("gives the low E a white halo (dark blue hides a black dot)", () => {
+    expect(getOctaveDotStyle("E", "lower")?.halo).toBe("#FFFFFF");
+  });
+
+  it("needs no halo for the lower octave on lighter colors", () => {
+    for (const pitch of ["D", "F", "G", "A", "H"] as const) {
+      const style = getOctaveDotStyle(pitch, "lower");
+      expect(style?.fill).toBe("#000000");
+      expect(style?.halo).toBeNull();
+    }
+  });
+
+  it("gives the high H a dark halo so the white dot stays visible", () => {
+    const style = getOctaveDotStyle("H", "upper");
+    expect(style).toEqual({ fill: "#FFFFFF", halo: "#333333" });
+  });
+
+  it("never halos a dot with its own color", () => {
+    for (const pitch of PITCH_NAMES) {
+      for (const octave of ["lower", "upper"] as const) {
+        const style = getOctaveDotStyle(pitch, octave);
+        expect(style!.halo).not.toBe(style!.fill);
+      }
+    }
+  });
+
+  it("gives the high A a dark halo (white dot on orange is low contrast)", () => {
+    expect(getOctaveDotStyle("A", "upper")).toEqual({
+      fill: "#FFFFFF",
+      halo: "#333333",
+    });
+  });
+
+  it("needs no halo for the upper octave on dark colors", () => {
+    for (const pitch of ["C", "D", "E", "F", "G"] as const) {
+      const style = getOctaveDotStyle(pitch, "upper");
+      expect(style?.fill).toBe("#FFFFFF");
+      expect(style?.halo).toBeNull();
+    }
   });
 });

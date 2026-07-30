@@ -193,7 +193,7 @@ describe("CirclesRenderer", () => {
     expect(handleClick).toHaveBeenCalledWith(0, 1, expect.anything());
   });
 
-  it("renders rests as empty gaps (no visible circles)", () => {
+  it("renders rests as uncolored outline symbols, not colored circles", () => {
     const score = makeScore([
       { type: "note", pitch: "C", octave: "middle", duration: "quarter" },
       { type: "rest", duration: "quarter" },
@@ -203,12 +203,32 @@ describe("CirclesRenderer", () => {
       <CirclesRenderer score={score} selection={null} />
     );
 
-    // Only 2 note circles (rest has no visible circle)
     const noteCircles = container.querySelectorAll(".note-circle");
     expect(noteCircles).toHaveLength(2);
+
+    // The rest is a hexagon outline with no fill
+    const rests = container.querySelectorAll(".rest-symbol");
+    expect(rests).toHaveLength(1);
+    expect(rests[0].getAttribute("fill")).toBe("none");
+    expect(rests[0].getAttribute("data-glyph")).toBe("hexagon");
   });
 
-  it("renders eighth notes with sub-circles", () => {
+  it("renders eighth and sixteenth rests with their own glyphs", () => {
+    const score = makeScore([
+      { type: "rest", duration: "eighth" },
+      { type: "rest", duration: "sixteenth" },
+    ]);
+    const { container } = render(
+      <CirclesRenderer score={score} selection={null} />
+    );
+
+    const rests = container.querySelectorAll(".rest-symbol");
+    expect(rests).toHaveLength(2);
+    expect(rests[0].getAttribute("data-glyph")).toBe("half-hexagon");
+    expect(rests[1].getAttribute("data-glyph")).toBe("bar");
+  });
+
+  it("renders an eighth note as a single half-circle path", () => {
     const score = makeScore([
       { type: "note", pitch: "F", octave: "middle", duration: "eighth" },
     ]);
@@ -216,12 +236,14 @@ describe("CirclesRenderer", () => {
       <CirclesRenderer score={score} selection={null} />
     );
 
-    // Eighth note = 2 sub-circles
-    const noteCircles = container.querySelectorAll(".note-circle");
-    expect(noteCircles).toHaveLength(2);
+    const noteGlyphs = container.querySelectorAll(".note-circle");
+    expect(noteGlyphs).toHaveLength(1);
+    expect(noteGlyphs[0].tagName.toLowerCase()).toBe("path");
+    expect(noteGlyphs[0].getAttribute("data-glyph")).toBe("half-circle");
+    expect(noteGlyphs[0].getAttribute("fill")).toBe(ULWILA_COLORS.F);
   });
 
-  it("renders sixteenth notes with 4 sub-circles", () => {
+  it("renders a sixteenth note as a single bar path", () => {
     const score = makeScore([
       { type: "note", pitch: "A", octave: "middle", duration: "sixteenth" },
     ]);
@@ -229,23 +251,117 @@ describe("CirclesRenderer", () => {
       <CirclesRenderer score={score} selection={null} />
     );
 
-    // Sixteenth note = 4 sub-circles in 2x2 grid
-    const noteCircles = container.querySelectorAll(".note-circle");
-    expect(noteCircles).toHaveLength(4);
+    const noteGlyphs = container.querySelectorAll(".note-circle");
+    expect(noteGlyphs).toHaveLength(1);
+    expect(noteGlyphs[0].getAttribute("data-glyph")).toBe("bar");
+    expect(noteGlyphs[0].getAttribute("fill")).toBe(ULWILA_COLORS.A);
   });
 
-  it("renders octave dots on sub-circles for eighth notes", () => {
+  it("renders half notes as two joined colored circles", () => {
     const score = makeScore([
-      { type: "note", pitch: "F", octave: "lower", duration: "eighth" },
+      { type: "note", pitch: "D", octave: "middle", duration: "half" },
     ]);
     const { container } = render(
       <CirclesRenderer score={score} selection={null} />
     );
 
-    // Each sub-circle should have an octave dot
+    const noteGlyphs = container.querySelectorAll(".note-circle");
+    expect(noteGlyphs).toHaveLength(2);
+    expect(noteGlyphs[0].getAttribute("fill")).toBe(ULWILA_COLORS.D);
+    expect(noteGlyphs[1].getAttribute("fill")).toBe(ULWILA_COLORS.D);
+  });
+
+  it("renders one octave dot per glyph of a multi-circle note", () => {
+    const score = makeScore([
+      { type: "note", pitch: "F", octave: "lower", duration: "half" },
+    ]);
+    const { container } = render(
+      <CirclesRenderer score={score} selection={null} />
+    );
+
     const dots = container.querySelectorAll(".octave-dot");
     expect(dots).toHaveLength(2);
     expect(dots[0].getAttribute("fill")).toBe("#000000");
     expect(dots[1].getAttribute("fill")).toBe("#000000");
+  });
+
+  it("renders an octave dot on an eighth note half circle", () => {
+    const score = makeScore([
+      { type: "note", pitch: "F", octave: "upper", duration: "eighth" },
+    ]);
+    const { container } = render(
+      <CirclesRenderer score={score} selection={null} />
+    );
+
+    const dots = container.querySelectorAll(".octave-dot");
+    expect(dots).toHaveLength(1);
+    expect(dots[0].getAttribute("fill")).toBe("#FFFFFF");
+  });
+
+  it("gives the low C dot a white halo so it is visible on the black circle", () => {
+    const score = makeScore([
+      { type: "note", pitch: "C", octave: "lower", duration: "quarter" },
+    ]);
+    const { container } = render(
+      <CirclesRenderer score={score} selection={null} />
+    );
+
+    const dot = container.querySelector(".octave-dot")!;
+    expect(dot.getAttribute("fill")).toBe("#000000");
+    expect(dot.getAttribute("stroke")).toBe("#FFFFFF");
+    expect(Number(dot.getAttribute("stroke-width"))).toBeGreaterThan(0);
+  });
+
+  it("gives the high H dot a dark halo so it is visible on the yellow circle", () => {
+    const score = makeScore([
+      { type: "note", pitch: "H", octave: "upper", duration: "quarter" },
+    ]);
+    const { container } = render(
+      <CirclesRenderer score={score} selection={null} />
+    );
+
+    const dot = container.querySelector(".octave-dot")!;
+    expect(dot.getAttribute("fill")).toBe("#FFFFFF");
+    expect(dot.getAttribute("stroke")).toBe("#333333");
+  });
+
+  it("leaves the dot unhaloed when the note color already contrasts", () => {
+    const score = makeScore([
+      { type: "note", pitch: "A", octave: "lower", duration: "quarter" },
+    ]);
+    const { container } = render(
+      <CirclesRenderer score={score} selection={null} />
+    );
+
+    const dot = container.querySelector(".octave-dot")!;
+    expect(dot.getAttribute("fill")).toBe("#000000");
+    expect(dot.getAttribute("stroke")).toBeNull();
+  });
+
+  it("keeps the haloed dot inside a narrow sixteenth bar", () => {
+    const score = makeScore([
+      { type: "note", pitch: "C", octave: "lower", duration: "sixteenth" },
+    ]);
+    const { container } = render(
+      <CirclesRenderer score={score} selection={null} />
+    );
+
+    const bar = container.querySelector(".note-circle")!;
+    const dot = container.querySelector(".octave-dot")!;
+    // Bar is circleSize * 0.18 = 7.2 wide; dot + halo must fit within it
+    const barHalfWidth = (40 * 0.18) / 2;
+    const dotOuter =
+      Number(dot.getAttribute("r")) + Number(dot.getAttribute("stroke-width")) / 2;
+    expect(bar).toBeTruthy();
+    expect(dotOuter).toBeLessThanOrEqual(barHalfWidth);
+  });
+
+  it("rests have no octave dots", () => {
+    const score = makeScore([{ type: "rest", duration: "quarter" }]);
+    const { container } = render(
+      <CirclesRenderer score={score} selection={null} />
+    );
+
+    expect(container.querySelectorAll(".octave-dot")).toHaveLength(0);
   });
 });

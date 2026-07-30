@@ -53,53 +53,83 @@ describe("computeCirclesLayout", () => {
     expect(c2.radius).toBe(20);
     expect(c1.isRest).toBe(false);
     expect(c2.isRest).toBe(false);
+    expect(c1.glyphs).toHaveLength(1);
+    expect(c1.glyphs[0].kind).toBe("circle");
   });
 
-  it("computes larger circles for half notes", () => {
+  it("builds half notes from two joined circles of base size", () => {
     const score = makeScore([
       { type: "note", pitch: "C", octave: "middle", duration: "half" },
     ]);
     const layout = computeCirclesLayout(score, { circleSize: 40 });
 
-    const circle = layout.rows[0].circles[0];
-    // Half note radius = 20 * 1.4 = 28
-    expect(circle.radius).toBe(28);
+    const symbol = layout.rows[0].circles[0];
+    expect(symbol.glyphs).toHaveLength(2);
+    expect(symbol.glyphs.every((g) => g.kind === "circle")).toBe(true);
+    expect(symbol.glyphs.every((g) => g.radius === 20)).toBe(true);
+    // The two circles touch: centers are one diameter apart
+    expect(symbol.glyphs[1].cx - symbol.glyphs[0].cx).toBeCloseTo(40);
   });
 
-  it("computes larger circles for whole notes", () => {
+  it("builds whole notes from four joined circles of base size", () => {
     const score = makeScore([
       { type: "note", pitch: "E", octave: "middle", duration: "whole" },
     ]);
     const layout = computeCirclesLayout(score, { circleSize: 40 });
 
-    const circle = layout.rows[0].circles[0];
-    // Whole note radius = 20 * 1.8 = 36
-    expect(circle.radius).toBeCloseTo(36);
+    const symbol = layout.rows[0].circles[0];
+    expect(symbol.glyphs).toHaveLength(4);
+    expect(symbol.glyphs.every((g) => g.kind === "circle")).toBe(true);
+    expect(symbol.glyphs.every((g) => g.radius === 20)).toBe(true);
   });
 
-  it("creates sub-circles for eighth notes", () => {
+  it("renders an eighth note as a single half circle", () => {
     const score = makeScore([
       { type: "note", pitch: "F", octave: "middle", duration: "eighth" },
     ]);
-    const layout = computeCirclesLayout(score);
+    const layout = computeCirclesLayout(score, { circleSize: 40 });
 
-    const circle = layout.rows[0].circles[0];
-    expect(circle.subCircles).toBeDefined();
-    expect(circle.subCircles).toHaveLength(2);
+    const symbol = layout.rows[0].circles[0];
+    expect(symbol.glyphs).toHaveLength(1);
+    expect(symbol.glyphs[0].kind).toBe("half-circle");
+    // Half the width of a full circle, full circle height
+    expect(symbol.glyphs[0].width).toBeCloseTo(20);
+    expect(symbol.glyphs[0].radius).toBe(20);
   });
 
-  it("creates sub-circles for sixteenth notes in 2x2 grid", () => {
+  it("renders a sixteenth note as a single narrow bar", () => {
     const score = makeScore([
       { type: "note", pitch: "G", octave: "middle", duration: "sixteenth" },
     ]);
-    const layout = computeCirclesLayout(score);
+    const layout = computeCirclesLayout(score, { circleSize: 40 });
 
-    const circle = layout.rows[0].circles[0];
-    expect(circle.subCircles).toBeDefined();
-    expect(circle.subCircles).toHaveLength(4);
+    const symbol = layout.rows[0].circles[0];
+    expect(symbol.glyphs).toHaveLength(1);
+    expect(symbol.glyphs[0].kind).toBe("bar");
+    expect(symbol.glyphs[0].width).toBeLessThan(20);
+    expect(symbol.glyphs[0].radius).toBe(20);
   });
 
-  it("creates empty gaps for rests", () => {
+  it("gives two eighth notes the horizontal span of one quarter note", () => {
+    const eighths = computeCirclesLayout(
+      makeScore([
+        { type: "note", pitch: "C", octave: "middle", duration: "eighth" },
+        { type: "note", pitch: "D", octave: "middle", duration: "eighth" },
+        { type: "note", pitch: "E", octave: "middle", duration: "quarter" },
+      ])
+    );
+    const quarters = computeCirclesLayout(
+      makeScore([
+        { type: "note", pitch: "C", octave: "middle", duration: "quarter" },
+        { type: "note", pitch: "E", octave: "middle", duration: "quarter" },
+      ])
+    );
+
+    // The note after the two eighths starts where the second quarter would
+    expect(eighths.rows[0].circles[2].cx).toBeCloseTo(quarters.rows[0].circles[1].cx);
+  });
+
+  it("renders rests as uncolored hexagon glyphs", () => {
     const score = makeScore([
       { type: "note", pitch: "C", octave: "middle", duration: "quarter" },
       { type: "rest", duration: "quarter" },
@@ -109,9 +139,38 @@ describe("computeCirclesLayout", () => {
 
     expect(layout.rows[0].circles).toHaveLength(3);
     expect(layout.rows[0].circles[0].isRest).toBe(false);
-    expect(layout.rows[0].circles[1].isRest).toBe(true);
-    expect(layout.rows[0].circles[1].radius).toBe(0);
+
+    const rest = layout.rows[0].circles[1];
+    expect(rest.isRest).toBe(true);
+    expect(rest.glyphs).toHaveLength(1);
+    expect(rest.glyphs[0].kind).toBe("hexagon");
+    expect(rest.radius).toBeGreaterThan(0);
+
     expect(layout.rows[0].circles[2].isRest).toBe(false);
+  });
+
+  it("uses one hexagon per quarter of rest duration", () => {
+    const layout = computeCirclesLayout(
+      makeScore([
+        { type: "rest", duration: "half" },
+        { type: "rest", duration: "whole" },
+      ])
+    );
+
+    expect(layout.rows[0].circles[0].glyphs).toHaveLength(2);
+    expect(layout.rows[0].circles[1].glyphs).toHaveLength(4);
+  });
+
+  it("renders eighth and sixteenth rests as half hexagon and bar", () => {
+    const layout = computeCirclesLayout(
+      makeScore([
+        { type: "rest", duration: "eighth" },
+        { type: "rest", duration: "sixteenth" },
+      ])
+    );
+
+    expect(layout.rows[0].circles[0].glyphs[0].kind).toBe("half-hexagon");
+    expect(layout.rows[0].circles[1].glyphs[0].kind).toBe("bar");
   });
 
   it("positions circles sequentially left to right", () => {
