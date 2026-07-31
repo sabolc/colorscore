@@ -93,6 +93,10 @@ export interface CircleLayout {
   octave?: Octave;
   /** Lyric text, if any */
   lyric?: string;
+  /** Repeat sign drawn before this symbol, dots facing right */
+  repeatStartX?: number;
+  /** Repeat sign drawn after this symbol, dots facing left */
+  repeatEndX?: number;
 }
 
 /**
@@ -149,6 +153,17 @@ export const ACCENT_GAP = 4;
 
 /** Tolerance for the beat accumulator, which sums fractional durations. */
 const BEAT_EPSILON = 1e-9;
+
+/**
+ * Geometry of a repeat sign: a thick and a thin vertical line with two dots on
+ * the side facing the repeated section. ULWILA itself defines no repeat symbol
+ * (see STORY-REPEAT-SIGNS); this is the standard notation sign, chosen because
+ * it has to be taught either way and this one transfers to ordinary sheet music.
+ */
+export const REPEAT_SIGN_WIDTH = 12;
+export const REPEAT_THICK_WIDTH = 3.5;
+export const REPEAT_THIN_WIDTH = 1.5;
+export const REPEAT_DOT_RADIUS = 2.5;
 
 /**
  * Maps a duration to the number of quarter-note beat slots it occupies.
@@ -215,9 +230,18 @@ export function computeCirclesLayout(
     const spanWidth = durationToBeats(note.duration) * fullConfig.circleSpacing;
     let gapBefore = pendingGap;
 
+    // A repeat sign gets room of its own before or after the element. Unlike
+    // the grouping gap it is never dropped at a row edge — losing it would
+    // change the music, not just the spacing.
+    const startSignWidth = note.repeatStart ? REPEAT_SIGN_WIDTH : 0;
+    const endSignWidth = note.repeatEnd ? REPEAT_SIGN_WIDTH : 0;
+
     // Check if we need to wrap to a new row — the pending gap counts towards
     // the width, but is discarded once we do wrap.
-    if (currentX + gapBefore + spanWidth > maxX && currentRow.length > 0) {
+    if (
+      currentX + gapBefore + startSignWidth + spanWidth + endSignWidth > maxX &&
+      currentRow.length > 0
+    ) {
       rows.push({ startY: currentRowY, circles: currentRow });
       currentRow = [];
       currentRowY += fullConfig.rowSpacing;
@@ -235,19 +259,28 @@ export function computeCirclesLayout(
     beatsElapsed += durationToBeats(note.duration);
 
     currentX += gapBefore;
-    currentRow.push(
-      computeSymbol(
-        note,
-        currentX,
-        spanWidth,
-        currentRowY,
-        baseRadius,
-        partIndex,
-        noteIndex,
-        hasMeasureAccent
-      )
+
+    const startSignX = startSignWidth ? currentX + REPEAT_SIGN_WIDTH / 2 : undefined;
+    currentX += startSignWidth;
+
+    const symbol = computeSymbol(
+      note,
+      currentX,
+      spanWidth,
+      currentRowY,
+      baseRadius,
+      partIndex,
+      noteIndex,
+      hasMeasureAccent
     );
     currentX += spanWidth;
+
+    if (startSignX !== undefined) symbol.repeatStartX = startSignX;
+    if (endSignWidth) {
+      symbol.repeatEndX = currentX + REPEAT_SIGN_WIDTH / 2;
+      currentX += endSignWidth;
+    }
+    currentRow.push(symbol);
     pendingGap = note.spaceAfter ? gapWidth : 0;
 
     // Force line break if the note has lineBreakAfter set
@@ -438,6 +471,42 @@ export function measureAccentPath(symbol: CircleLayout): string {
   const top = bottom - ACCENT_HEIGHT;
   const halfW = ACCENT_WIDTH / 2;
   return `M ${cx - halfW} ${top} L ${cx + halfW} ${top} L ${cx} ${bottom} Z`;
+}
+
+/**
+ * Geometry of one repeat sign, centred on `cx` and spanning the symbol row.
+ * `facing` is the side the repeated section lies on: "right" for a section
+ * start, "left" for a section end.
+ */
+export function repeatSignParts(
+  cx: number,
+  cy: number,
+  radius: number,
+  facing: "left" | "right"
+): {
+  thick: { x: number; y: number; width: number; height: number };
+  thin: { x: number; y: number; width: number; height: number };
+  dots: Array<{ cx: number; cy: number; r: number }>;
+} {
+  const top = cy - radius;
+  const height = radius * 2;
+  const half = REPEAT_SIGN_WIDTH / 2;
+  // The thick line sits on the outside, away from the repeated section
+  const thickX = facing === "right" ? cx - half : cx + half - REPEAT_THICK_WIDTH;
+  const thinX =
+    facing === "right"
+      ? cx - half + REPEAT_THICK_WIDTH + 1.5
+      : cx + half - REPEAT_THICK_WIDTH - 1.5 - REPEAT_THIN_WIDTH;
+  const dotX = facing === "right" ? cx + half - REPEAT_DOT_RADIUS : cx - half + REPEAT_DOT_RADIUS;
+
+  return {
+    thick: { x: thickX, y: top, width: REPEAT_THICK_WIDTH, height },
+    thin: { x: thinX, y: top, width: REPEAT_THIN_WIDTH, height },
+    dots: [
+      { cx: dotX, cy: cy - radius * 0.4, r: REPEAT_DOT_RADIUS },
+      { cx: dotX, cy: cy + radius * 0.4, r: REPEAT_DOT_RADIUS },
+    ],
+  };
 }
 
 /**

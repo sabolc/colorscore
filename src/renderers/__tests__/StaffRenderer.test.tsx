@@ -381,4 +381,39 @@ describe("StaffRenderer", () => {
     const clefs = container.querySelectorAll(".treble-clef");
     expect(clefs.length).toBe(systems.length);
   });
+
+  it("renders repeat signs in staff mode too — a repeat is part of the music", () => {
+    const score: Score = {
+      title: "T",
+      renderingMode: "staff",
+      timeSignature: { beats: 4, beatValue: 4 },
+      clef: "treble",
+      parts: [
+        {
+          notes: [
+            {
+              type: "note",
+              pitch: "C",
+              octave: "middle",
+              duration: "quarter",
+              repeatStart: true,
+            },
+            {
+              type: "note",
+              pitch: "D",
+              octave: "middle",
+              duration: "quarter",
+              repeatEnd: true,
+            },
+          ],
+        },
+      ],
+    };
+
+    const { container } = render(<StaffRenderer score={score} selection={null} />);
+
+    const signs = [...container.querySelectorAll(".repeat-sign")];
+    expect(signs).toHaveLength(2);
+    expect(signs.map((s) => s.getAttribute("data-facing"))).toEqual(["right", "left"]);
+  });
 });

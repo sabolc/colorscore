@@ -180,6 +180,71 @@
   color: #0066cc;
 }
 
+.accentedButton {
+  padding: 0.5rem 1rem;
+  min-width: 44px;
+  min-height: 44px;
+  border: 2px solid #ccc;
+  border-radius: 4px;
+  background: white;
+  color: #333;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.accentedButton:hover:not(:disabled) {
+  border-color: #999;
+  background: #f0f0f0;
+}
+
+.accentedButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.accentedActive {
+  border-color: #0066cc;
+  background: #e8f0fe;
+  color: #0066cc;
+}
+
+/* Marker toggles share rows two-per-row. The panel is the tallest thing in the
+   editor, and seven full-width rows would push it past the viewport again. The
+   44px minimum touch target stays — the target users need it. */
+.markerGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.markerButton {
+  flex: 1 1 45%;
+  padding: 0.4rem 0.5rem;
+  min-height: 44px;
+  border: 2px solid #ccc;
+  border-radius: 4px;
+  background: white;
+  color: #333;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.markerButton:hover {
+  border-color: #999;
+  background: #f0f0f0;
+}
+
+.markerActive {
+  border-color: #0066cc;
+  background: #e8f0fe;
+  color: #0066cc;
+}
+
 .measureAccentButton {
   padding: 0.5rem 1rem;
   min-width: 44px;

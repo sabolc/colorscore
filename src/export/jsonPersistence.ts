@@ -146,6 +146,13 @@ function validateNoteOrRest(
       );
     }
 
+    // Validate optional repeat markers
+    for (const flag of ["repeatStart", "repeatEnd"] as const) {
+      if (obj[flag] !== undefined && typeof obj[flag] !== "boolean") {
+        throw new Error(`${prefix}: ${flag} must be a boolean if provided`);
+      }
+    }
+
     // Validate optional spaceAfter
     if (obj.spaceAfter !== undefined && typeof obj.spaceAfter !== "boolean") {
       throw new Error(`${prefix}: spaceAfter must be a boolean if provided`);
@@ -172,6 +179,12 @@ function validateNoteOrRest(
     if (obj.measureAccent !== undefined) {
       (note as { measureAccent: MeasureAccent }).measureAccent =
         obj.measureAccent as MeasureAccent;
+    }
+    if (obj.repeatStart !== undefined) {
+      (note as { repeatStart: boolean }).repeatStart = obj.repeatStart as boolean;
+    }
+    if (obj.repeatEnd !== undefined) {
+      (note as { repeatEnd: boolean }).repeatEnd = obj.repeatEnd as boolean;
     }
     if (obj.spaceAfter !== undefined) {
       (note as { spaceAfter: boolean }).spaceAfter = obj.spaceAfter as boolean;
@@ -205,6 +218,13 @@ function validateNoteOrRest(
       );
     }
 
+    // Validate optional repeat markers
+    for (const flag of ["repeatStart", "repeatEnd"] as const) {
+      if (obj[flag] !== undefined && typeof obj[flag] !== "boolean") {
+        throw new Error(`${prefix}: ${flag} must be a boolean if provided`);
+      }
+    }
+
     // Validate optional spaceAfter
     if (obj.spaceAfter !== undefined && typeof obj.spaceAfter !== "boolean") {
       throw new Error(`${prefix}: spaceAfter must be a boolean if provided`);
@@ -223,6 +243,12 @@ function validateNoteOrRest(
     if (obj.measureAccent !== undefined) {
       (rest as { measureAccent: MeasureAccent }).measureAccent =
         obj.measureAccent as MeasureAccent;
+    }
+    if (obj.repeatStart !== undefined) {
+      (rest as { repeatStart: boolean }).repeatStart = obj.repeatStart as boolean;
+    }
+    if (obj.repeatEnd !== undefined) {
+      (rest as { repeatEnd: boolean }).repeatEnd = obj.repeatEnd as boolean;
     }
     if (obj.spaceAfter !== undefined) {
       (rest as { spaceAfter: boolean }).spaceAfter = obj.spaceAfter as boolean;

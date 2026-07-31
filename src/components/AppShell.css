@@ -75,7 +75,7 @@
    (see useContainerWidth in ScoreCanvas). */
 @media (min-width: 1200px) {
   .app-shell {
-    grid-template-columns: 300px 300px 1fr;
+    grid-template-columns: 300px 340px 1fr;
     grid-template-rows: auto 1fr;
     grid-template-areas:
       "toolbar    toolbar toolbar"

@@ -748,4 +748,80 @@ describe("loadScore", () => {
       );
     });
   });
+
+  describe("repeat markers", () => {
+    it("round-trips both marks", async () => {
+      const score = makeValidScore({
+        parts: [
+          {
+            notes: [
+              {
+                type: "note",
+                pitch: "C",
+                octave: "middle",
+                duration: "quarter",
+                repeatStart: true,
+              },
+              { type: "note", pitch: "D", octave: "middle", duration: "quarter" },
+              { type: "rest", duration: "quarter", repeatEnd: true },
+            ],
+          },
+        ],
+      });
+
+      const loaded = await loadScore(makeScoreFile(score));
+
+      expect(loaded.parts[0].notes[0].repeatStart).toBe(true);
+      expect(loaded.parts[0].notes[2]).toMatchObject({
+        type: "rest",
+        repeatEnd: true,
+      });
+      expect(loaded.parts[0].notes[1].repeatStart).toBeUndefined();
+      expect(loaded.parts[0].notes[1].repeatEnd).toBeUndefined();
+    });
+
+    it("loads a score file written before the marks existed", async () => {
+      const legacy = {
+        title: "Old",
+        renderingMode: "circles",
+        timeSignature: { beats: 4, beatValue: 4 },
+        clef: "treble",
+        parts: [
+          {
+            notes: [
+              { type: "note", pitch: "G", octave: "middle", duration: "quarter" },
+            ],
+          },
+        ],
+      };
+
+      const loaded = await loadScore(makeFile(JSON.stringify(legacy)));
+
+      expect(loaded.parts[0].notes[0].repeatStart).toBeUndefined();
+      expect(loaded.parts[0].notes[0].repeatEnd).toBeUndefined();
+    });
+
+    it("rejects a non-boolean repeat mark", async () => {
+      const bad = {
+        ...makeValidScore(),
+        parts: [
+          {
+            notes: [
+              {
+                type: "note",
+                pitch: "C",
+                octave: "middle",
+                duration: "quarter",
+                repeatEnd: "yes",
+              },
+            ],
+          },
+        ],
+      };
+
+      await expect(loadScore(makeFile(JSON.stringify(bad)))).rejects.toThrow(
+        /repeatEnd must be a boolean/,
+      );
+    });
+  });
 });

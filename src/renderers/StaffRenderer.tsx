@@ -386,6 +386,49 @@ const StaffRenderer: React.FC<StaffRendererProps> = ({
   };
 
   /**
+   * Render repeat bar lines for the marked notes in a system: a thick and a
+   * thin line spanning the staff, with two dots in the second and third spaces
+   * facing the repeated section. A repeat is part of the music, so staff mode
+   * shows the same markers circles mode does.
+   */
+  const renderRepeatSigns = (system: StaffSystem) => {
+    const signs: React.ReactNode[] = [];
+    const top = system.startY;
+    const height = 4 * config.staffLineSpacing;
+    const spacing = config.staffLineSpacing;
+
+    system.notes.forEach((noteLayout, index) => {
+      const part = score.parts[noteLayout.partIndex];
+      const note = part?.notes[noteLayout.noteIndex];
+      if (!note) return;
+
+      const draw = (x: number, facing: "left" | "right", key: string) => {
+        // Thick line outside, thin inside, dots on the repeated section's side
+        const thickX = facing === "right" ? x : x - 3.5;
+        const thinX = facing === "right" ? x + 5 : x - 6.5;
+        const dotX = facing === "right" ? x + 10 : x - 10;
+        signs.push(
+          <g key={key} className="repeat-sign" data-facing={facing}>
+            <rect x={thickX} y={top} width={3.5} height={height} fill="black" />
+            <rect x={thinX} y={top} width={1.5} height={height} fill="black" />
+            <circle cx={dotX} cy={top + spacing * 1.5} r={2.5} fill="black" />
+            <circle cx={dotX} cy={top + spacing * 2.5} r={2.5} fill="black" />
+          </g>,
+        );
+      };
+
+      if (note.repeatStart) {
+        draw(noteLayout.x - config.noteSpacing / 2, "right", `repeat-start-${index}`);
+      }
+      if (note.repeatEnd) {
+        draw(noteLayout.x + config.noteSpacing / 2, "left", `repeat-end-${index}`);
+      }
+    });
+
+    return signs;
+  };
+
+  /**
    * Render a complete staff system
    */
   const renderSystem = (system: StaffSystem, systemIndex: number) => {
@@ -409,6 +452,7 @@ const StaffRenderer: React.FC<StaffRendererProps> = ({
 
         {/* Bar lines */}
         {renderBarLines(system)}
+        {renderRepeatSigns(system)}
 
         {/* Notes */}
         {systemNotes.map(({ noteLayout, note }) =>

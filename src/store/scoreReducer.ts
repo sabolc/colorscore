@@ -57,6 +57,14 @@ export type ScoreAction =
       payload: { partIndex: number; noteIndex: number };
     }
   | {
+      type: "TOGGLE_REPEAT_START";
+      payload: { partIndex: number; noteIndex: number };
+    }
+  | {
+      type: "TOGGLE_REPEAT_END";
+      payload: { partIndex: number; noteIndex: number };
+    }
+  | {
       type: "DELETE_NOTES";
       payload: { partIndex: number; startIndex: number; endIndex: number };
     };
@@ -250,6 +258,26 @@ export function scoreReducer(state: Score, action: ScoreAction): Score {
       // omitted from exported JSON instead of writing noise into every file.
       const newValue = !note.spaceAfter;
       const updated = { ...note, spaceAfter: newValue || undefined };
+
+      const newNotes = [...part.notes];
+      newNotes[noteIndex] = updated;
+      const newParts = [...state.parts];
+      newParts[partIndex] = { ...part, notes: newNotes };
+
+      return { ...state, parts: newParts };
+    }
+
+    case "TOGGLE_REPEAT_START":
+    case "TOGGLE_REPEAT_END": {
+      const { partIndex, noteIndex } = action.payload;
+      const part = state.parts[partIndex];
+      if (!part) return state;
+      const note = part.notes[noteIndex];
+      if (!note) return state;
+
+      const field = action.type === "TOGGLE_REPEAT_START" ? "repeatStart" : "repeatEnd";
+      // undefined rather than false, so the marker leaves no trace in exports
+      const updated = { ...note, [field]: note[field] ? undefined : true };
 
       const newNotes = [...part.notes];
       newNotes[noteIndex] = updated;

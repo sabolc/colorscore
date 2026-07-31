@@ -7,7 +7,7 @@
  */
 
 import type { Pitch, Octave, Duration } from "../models/types";
-import { ULWILA_COLORS, PITCH_NAMES } from "../constants/colors";
+import { ULWILA_COLORS, PITCH_NAMES, ACCENTED_PITCHES } from "../constants/colors";
 import { useScore, useScoreDispatch } from "../store/ScoreContext";
 import { useSelection, useSelectionDispatch } from "../store/SelectionContext";
 import { getSelectedCount, getSelectionRange } from "../store/selectionReducer";
@@ -81,12 +81,30 @@ export function NoteEditor() {
   const isNote = noteOrRest.type === "note";
   const currentPitch = isNote ? noteOrRest.pitch : null;
   const currentOctave = isNote ? noteOrRest.octave : null;
+  const isAccented = isNote && Boolean(noteOrRest.accented);
+  const canBeAccented = currentPitch !== null && ACCENTED_PITCHES.includes(currentPitch);
   const currentDuration = noteOrRest.duration;
 
   const handlePitchChange = (pitch: Pitch) => {
+    // E and H have no sharp, so retuning onto one drops the flag with it
+    const changes = ACCENTED_PITCHES.includes(pitch)
+      ? { pitch }
+      : { pitch, accented: undefined };
     scoreDispatch({
       type: "EDIT_NOTE",
-      payload: { partIndex, noteIndex, changes: { pitch } },
+      payload: { partIndex, noteIndex, changes },
+    });
+  };
+
+  const handleToggleAccented = () => {
+    scoreDispatch({
+      type: "EDIT_NOTE",
+      payload: {
+        partIndex,
+        noteIndex,
+        // undefined rather than false, so the flag stays out of exported JSON
+        changes: { accented: isAccented ? undefined : true },
+      },
     });
   };
 
@@ -103,6 +121,13 @@ export function NoteEditor() {
     scoreDispatch({
       type: "EDIT_NOTE",
       payload: { partIndex, noteIndex, changes: { octave } },
+    });
+  };
+
+  const handleToggleRepeat = (edge: "start" | "end") => {
+    scoreDispatch({
+      type: edge === "start" ? "TOGGLE_REPEAT_START" : "TOGGLE_REPEAT_END",
+      payload: { partIndex, noteIndex },
     });
   };
 
@@ -215,10 +240,25 @@ export function NoteEditor() {
         </select>
       </div>
 
+      {/* Sharp toggle — the same control the note palette offers when adding */}
+      <button
+        type="button"
+        className={`${styles.accentedButton} ${isAccented ? styles.accentedActive : ""}`}
+        onClick={handleToggleAccented}
+        disabled={isRest || !canBeAccented}
+        aria-label={t.noteEditor.toggleAccented}
+        aria-pressed={isAccented}
+      >
+        {t.noteEditor.accented} ♯
+      </button>
+
+      {/* Marker group — kept on shared rows; this panel is already the tallest
+          thing in the editor and two more full-width rows would grow it again */}
+      <div className={styles.markerGroup} role="group" aria-label={t.noteEditor.markersLabel}>
       {/* Measure accent — three states, so a pressed flag cannot describe it */}
       <button
         type="button"
-        className={`${styles.measureAccentButton} ${
+        className={`${styles.markerButton} ${
           noteOrRest.measureAccent === "on"
             ? styles.measureAccentOn
             : noteOrRest.measureAccent === "off"
@@ -245,8 +285,8 @@ export function NoteEditor() {
       {/* Grouping Gap Toggle — a plain space, not a rest */}
       <button
         type="button"
-        className={`${styles.spaceButton} ${
-          noteOrRest.spaceAfter ? styles.spaceActive : ""
+        className={`${styles.markerButton} ${
+          noteOrRest.spaceAfter ? styles.markerActive : ""
         }`}
         onClick={handleToggleSpace}
         aria-label={t.noteEditor.toggleSpace}
@@ -258,8 +298,8 @@ export function NoteEditor() {
       {/* Line Break Toggle */}
       <button
         type="button"
-        className={`${styles.lineBreakButton} ${
-          noteOrRest.lineBreakAfter ? styles.lineBreakActive : ""
+        className={`${styles.markerButton} ${
+          noteOrRest.lineBreakAfter ? styles.markerActive : ""
         }`}
         onClick={handleToggleLineBreak}
         aria-label={t.noteEditor.toggleLineBreak}
@@ -267,6 +307,31 @@ export function NoteEditor() {
       >
         {t.noteEditor.lineBreak} ↵
       </button>
+
+      <button
+        type="button"
+        className={`${styles.markerButton} ${
+          noteOrRest.repeatStart ? styles.markerActive : ""
+        }`}
+        onClick={() => handleToggleRepeat("start")}
+        aria-label={t.noteEditor.toggleRepeatStart}
+        aria-pressed={!!noteOrRest.repeatStart}
+      >
+        𝄆 {t.noteEditor.repeatStart}
+      </button>
+
+      <button
+        type="button"
+        className={`${styles.markerButton} ${
+          noteOrRest.repeatEnd ? styles.markerActive : ""
+        }`}
+        onClick={() => handleToggleRepeat("end")}
+        aria-label={t.noteEditor.toggleRepeatEnd}
+        aria-pressed={!!noteOrRest.repeatEnd}
+      >
+        𝄇 {t.noteEditor.repeatEnd}
+      </button>
+      </div>
 
       {/* Delete Button */}
       <button

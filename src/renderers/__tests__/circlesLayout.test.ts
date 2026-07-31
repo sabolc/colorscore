@@ -7,6 +7,7 @@ import {
   computeCirclesLayout,
   ACCENT_GAP,
   ACCENT_HEIGHT,
+  REPEAT_SIGN_WIDTH,
 } from "../circlesLayout";
 import { computeLayout as computeStaffLayout } from "../staffLayout";
 import type { Score } from "../../models/types";
@@ -462,6 +463,86 @@ describe("computeCirclesLayout", () => {
       const triangleTop = symbol.cy - symbol.radius - ACCENT_GAP - ACCENT_HEIGHT;
       expect(symbol.hasMeasureAccent).toBe(true);
       expect(triangleTop).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  describe("repeat signs", () => {
+    const six = (marks: Record<number, { repeatStart?: boolean; repeatEnd?: boolean }> = {}) =>
+      makeScore(
+        Array.from({ length: 6 }, (_, i) => ({
+          type: "note" as const,
+          pitch: "C" as const,
+          octave: "middle" as const,
+          duration: "quarter" as const,
+          ...(marks[i] ?? {}),
+        })),
+      );
+
+    it("reserves room before a start mark and after an end mark", () => {
+      const plain = computeCirclesLayout(six(), { canvasWidth: 4000 });
+      const marked = computeCirclesLayout(
+        six({ 1: { repeatStart: true }, 4: { repeatEnd: true } }),
+        { canvasWidth: 4000 },
+      );
+
+      const p = plain.rows[0].circles;
+      const m = marked.rows[0].circles;
+
+      expect(m[0].cx).toBeCloseTo(p[0].cx); // before the start mark: unchanged
+      expect(m[1].cx - p[1].cx).toBeCloseTo(REPEAT_SIGN_WIDTH);
+      expect(m[4].cx - p[4].cx).toBeCloseTo(REPEAT_SIGN_WIDTH);
+      expect(m[5].cx - p[5].cx).toBeCloseTo(REPEAT_SIGN_WIDTH * 2);
+    });
+
+    it("places the signs outside the symbols they belong to", () => {
+      const layout = computeCirclesLayout(
+        six({ 1: { repeatStart: true }, 4: { repeatEnd: true } }),
+        { canvasWidth: 4000 },
+      );
+      const start = layout.rows[0].circles[1];
+      const end = layout.rows[0].circles[4];
+
+      expect(start.repeatStartX).toBeLessThan(start.cx - start.width / 2);
+      expect(end.repeatEndX).toBeGreaterThan(end.cx + end.width / 2);
+    });
+
+    it("does not resize symbols or move them vertically", () => {
+      const plain = computeCirclesLayout(six(), { canvasWidth: 4000 });
+      const marked = computeCirclesLayout(
+        six({ 1: { repeatStart: true }, 4: { repeatEnd: true } }),
+        { canvasWidth: 4000 },
+      );
+
+      marked.rows[0].circles.forEach((sym, i) => {
+        expect(sym.radius).toBe(plain.rows[0].circles[i].radius);
+        expect(sym.cy).toBeCloseTo(plain.rows[0].circles[i].cy);
+        expect(sym.width).toBeCloseTo(plain.rows[0].circles[i].width);
+      });
+    });
+
+    it("counts the reserved room when a row wraps", () => {
+      const marked = computeCirclesLayout(
+        six({ 0: { repeatStart: true }, 5: { repeatEnd: true } }),
+        { canvasWidth: 260 },
+      );
+
+      // Every symbol still fits inside the canvas, signs included
+      for (const row of marked.rows) {
+        for (const sym of row.circles) {
+          const right = sym.repeatEndX ?? sym.cx + sym.width / 2;
+          expect(right).toBeLessThanOrEqual(260);
+        }
+      }
+    });
+
+    it("leaves unmarked symbols without sign positions", () => {
+      const layout = computeCirclesLayout(six({ 2: { repeatEnd: true } }), {
+        canvasWidth: 4000,
+      });
+
+      expect(layout.rows[0].circles[2].repeatEndX).toBeDefined();
+      expect(layout.rows[0].circles[2].repeatStartX).toBeUndefined();
+      expect(layout.rows[0].circles[0].repeatEndX).toBeUndefined();
     });
   });
 });

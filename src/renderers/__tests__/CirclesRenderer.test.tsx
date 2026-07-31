@@ -459,4 +459,78 @@ describe("CirclesRenderer", () => {
       expect(container.querySelectorAll(".bar-line")).toHaveLength(0);
     });
   });
+
+  describe("repeat signs", () => {
+    const marked = (marks: Record<number, Record<string, boolean>>) =>
+      makeScore(
+        Array.from({ length: 4 }, (_, i) => ({
+          type: "note" as const,
+          pitch: "C" as const,
+          octave: "middle" as const,
+          duration: "quarter" as const,
+          ...(marks[i] ?? {}),
+        })),
+      );
+
+    it("draws a start sign with its dots facing right", () => {
+      const { container } = render(
+        <CirclesRenderer score={marked({ 1: { repeatStart: true } })} selection={null} />,
+      );
+
+      const signs = container.querySelectorAll(".repeat-sign");
+      expect(signs).toHaveLength(1);
+      expect(signs[0].getAttribute("data-facing")).toBe("right");
+      // thick line, thin line, two dots
+      expect(signs[0].querySelectorAll("rect")).toHaveLength(2);
+      expect(signs[0].querySelectorAll("circle")).toHaveLength(2);
+    });
+
+    it("draws an end sign with its dots facing left", () => {
+      const { container } = render(
+        <CirclesRenderer score={marked({ 2: { repeatEnd: true } })} selection={null} />,
+      );
+
+      const signs = container.querySelectorAll(".repeat-sign");
+      expect(signs).toHaveLength(1);
+      expect(signs[0].getAttribute("data-facing")).toBe("left");
+    });
+
+    it("draws both signs for a complete section", () => {
+      const { container } = render(
+        <CirclesRenderer
+          score={marked({ 1: { repeatStart: true }, 2: { repeatEnd: true } })}
+          selection={null}
+        />,
+      );
+
+      const signs = [...container.querySelectorAll(".repeat-sign")];
+      expect(signs).toHaveLength(2);
+      expect(signs.map((s) => s.getAttribute("data-facing"))).toEqual(["right", "left"]);
+    });
+
+    it("draws nothing when no element is marked", () => {
+      const { container } = render(
+        <CirclesRenderer score={marked({})} selection={null} />,
+      );
+
+      expect(container.querySelectorAll(".repeat-sign")).toHaveLength(0);
+    });
+
+    it("does not overlap the symbol it belongs to", () => {
+      const { container } = render(
+        <CirclesRenderer score={marked({ 1: { repeatStart: true } })} selection={null} />,
+      );
+
+      const sign = container.querySelector(".repeat-sign")!;
+      const rects = [...sign.querySelectorAll("rect")];
+      const signRight = Math.max(
+        ...rects.map((r) => Number(r.getAttribute("x")) + Number(r.getAttribute("width"))),
+      );
+      const circles = [...container.querySelectorAll(".note-circle")];
+      const secondCircleLeft =
+        Number(circles[1].getAttribute("cx")) - Number(circles[1].getAttribute("r"));
+
+      expect(signRight).toBeLessThanOrEqual(secondCircleLeft);
+    });
+  });
 });

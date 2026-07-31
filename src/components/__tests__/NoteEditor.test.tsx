@@ -363,4 +363,179 @@ describe("NoteEditor", () => {
       );
     });
   });
+
+  describe("sharp toggle", () => {
+    const SHARP = "Make this note sharp (only C, D, F, G and A have one)";
+
+    it("makes an existing plain note sharp", () => {
+      renderWithSelection(
+        makeScore([{ type: "note", pitch: "G", octave: "middle", duration: "quarter" }]),
+        0,
+        0,
+      );
+
+      const toggle = screen.getByLabelText(SHARP);
+      expect(toggle).toHaveAttribute("aria-pressed", "false");
+
+      fireEvent.click(toggle);
+      expect(screen.getByLabelText(SHARP)).toHaveAttribute("aria-pressed", "true");
+    });
+
+    it("clears the sharp on a second click", () => {
+      renderWithSelection(
+        makeScore([
+          { type: "note", pitch: "C", octave: "middle", duration: "quarter", accented: true },
+        ]),
+        0,
+        0,
+      );
+
+      expect(screen.getByLabelText(SHARP)).toHaveAttribute("aria-pressed", "true");
+      fireEvent.click(screen.getByLabelText(SHARP));
+      expect(screen.getByLabelText(SHARP)).toHaveAttribute("aria-pressed", "false");
+    });
+
+    it("is disabled for E and H, which have no sharp", () => {
+      for (const pitch of ["E", "H"] as const) {
+        const { unmount } = renderWithSelection(
+          makeScore([{ type: "note", pitch, octave: "middle", duration: "quarter" }]),
+          0,
+          0,
+        );
+        expect(screen.getByLabelText(SHARP)).toBeDisabled();
+        unmount();
+      }
+    });
+
+    it("is enabled for a pitch that has a sharp", () => {
+      renderWithSelection(
+        makeScore([{ type: "note", pitch: "F", octave: "middle", duration: "quarter" }]),
+        0,
+        0,
+      );
+
+      expect(screen.getByLabelText(SHARP)).toBeEnabled();
+    });
+
+    it("is disabled for a rest", () => {
+      renderWithSelection(makeScore([{ type: "rest", duration: "quarter" }]), 0, 0);
+
+      expect(screen.getByLabelText(SHARP)).toBeDisabled();
+    });
+
+    it("drops the sharp when the pitch changes to one without a sharp", () => {
+      renderWithSelection(
+        makeScore([
+          { type: "note", pitch: "G", octave: "middle", duration: "quarter", accented: true },
+        ]),
+        0,
+        0,
+      );
+
+      expect(screen.getByLabelText(SHARP)).toHaveAttribute("aria-pressed", "true");
+
+      fireEvent.click(screen.getByLabelText("Set pitch to E - E (Mi)"));
+
+      expect(screen.getByLabelText(SHARP)).toHaveAttribute("aria-pressed", "false");
+      expect(screen.getByLabelText(SHARP)).toBeDisabled();
+    });
+
+    it("keeps the sharp when the pitch changes to another that has one", () => {
+      renderWithSelection(
+        makeScore([
+          { type: "note", pitch: "G", octave: "middle", duration: "quarter", accented: true },
+        ]),
+        0,
+        0,
+      );
+
+      fireEvent.click(screen.getByLabelText("Set pitch to D - D (Ré)"));
+
+      expect(screen.getByLabelText(SHARP)).toHaveAttribute("aria-pressed", "true");
+    });
+  });
+
+  describe("repeat toggles", () => {
+    const FROM = "Start a repeated section before this element";
+    const TO = "End a repeated section after this element";
+
+    it("offers both toggles for a selected note", () => {
+      renderWithSelection(
+        makeScore([{ type: "note", pitch: "C", octave: "middle", duration: "quarter" }]),
+        0,
+        0,
+      );
+
+      expect(screen.getByLabelText(FROM)).toHaveAttribute("aria-pressed", "false");
+      expect(screen.getByLabelText(TO)).toHaveAttribute("aria-pressed", "false");
+    });
+
+    it("sets and clears the repeat start", () => {
+      renderWithSelection(
+        makeScore([{ type: "note", pitch: "C", octave: "middle", duration: "quarter" }]),
+        0,
+        0,
+      );
+
+      fireEvent.click(screen.getByLabelText(FROM));
+      expect(screen.getByLabelText(FROM)).toHaveAttribute("aria-pressed", "true");
+
+      fireEvent.click(screen.getByLabelText(FROM));
+      expect(screen.getByLabelText(FROM)).toHaveAttribute("aria-pressed", "false");
+    });
+
+    it("keeps the two toggles independent, including both on one element", () => {
+      renderWithSelection(
+        makeScore([{ type: "note", pitch: "C", octave: "middle", duration: "quarter" }]),
+        0,
+        0,
+      );
+
+      fireEvent.click(screen.getByLabelText(FROM));
+      fireEvent.click(screen.getByLabelText(TO));
+
+      expect(screen.getByLabelText(FROM)).toHaveAttribute("aria-pressed", "true");
+      expect(screen.getByLabelText(TO)).toHaveAttribute("aria-pressed", "true");
+
+      fireEvent.click(screen.getByLabelText(FROM));
+      expect(screen.getByLabelText(FROM)).toHaveAttribute("aria-pressed", "false");
+      expect(screen.getByLabelText(TO)).toHaveAttribute("aria-pressed", "true");
+    });
+
+    it("works on a rest", () => {
+      renderWithSelection(makeScore([{ type: "rest", duration: "quarter" }]), 0, 0);
+
+      fireEvent.click(screen.getByLabelText(TO));
+      expect(screen.getByLabelText(TO)).toHaveAttribute("aria-pressed", "true");
+    });
+
+    it("does not disturb the other markers", () => {
+      renderWithSelection(
+        makeScore([{ type: "note", pitch: "C", octave: "middle", duration: "quarter" }]),
+        0,
+        0,
+      );
+
+      const GAP = "Toggle a grouping gap after this note (spacing only, not a rest)";
+      fireEvent.click(screen.getByLabelText(GAP));
+      fireEvent.click(screen.getByLabelText(FROM));
+
+      expect(screen.getByLabelText(GAP)).toHaveAttribute("aria-pressed", "true");
+      expect(screen.getByLabelText(FROM)).toHaveAttribute("aria-pressed", "true");
+    });
+
+    it("keeps every marker toggle at the 44px minimum touch target", () => {
+      renderWithSelection(
+        makeScore([{ type: "note", pitch: "C", octave: "middle", duration: "quarter" }]),
+        0,
+        0,
+      );
+
+      // The class carries min-height: 44px; assert every marker uses it so a
+      // future button cannot quietly opt out of the accessibility rule.
+      for (const label of [FROM, TO]) {
+        expect(screen.getByLabelText(label).className).toMatch(/markerButton/);
+      }
+    });
+  });
 });

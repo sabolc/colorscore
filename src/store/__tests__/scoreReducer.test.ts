@@ -451,4 +451,126 @@ describe("scoreReducer", () => {
       ).toBe(state);
     });
   });
+
+  describe("repeat markers", () => {
+    const twoNotes = () => {
+      let state = initialScoreState;
+      for (const pitch of ["C", "D"] as const) {
+        state = scoreReducer(state, {
+          type: "ADD_NOTE",
+          payload: { pitch, octave: "middle", duration: "quarter" },
+        });
+      }
+      return state;
+    };
+
+    it("sets and clears the repeat start", () => {
+      const on = scoreReducer(twoNotes(), {
+        type: "TOGGLE_REPEAT_START",
+        payload: { partIndex: 0, noteIndex: 0 },
+      });
+      expect(on.parts[0].notes[0].repeatStart).toBe(true);
+
+      const off = scoreReducer(on, {
+        type: "TOGGLE_REPEAT_START",
+        payload: { partIndex: 0, noteIndex: 0 },
+      });
+      expect(off.parts[0].notes[0].repeatStart).toBeUndefined();
+      expect(JSON.parse(JSON.stringify(off.parts[0].notes[0]))).not.toHaveProperty(
+        "repeatStart",
+      );
+    });
+
+    it("sets and clears the repeat end", () => {
+      const on = scoreReducer(twoNotes(), {
+        type: "TOGGLE_REPEAT_END",
+        payload: { partIndex: 0, noteIndex: 1 },
+      });
+      expect(on.parts[0].notes[1].repeatEnd).toBe(true);
+      expect(on.parts[0].notes[0].repeatEnd).toBeUndefined();
+    });
+
+    it("keeps the two marks independent, including both on one element", () => {
+      let state = scoreReducer(twoNotes(), {
+        type: "TOGGLE_REPEAT_START",
+        payload: { partIndex: 0, noteIndex: 0 },
+      });
+      state = scoreReducer(state, {
+        type: "TOGGLE_REPEAT_END",
+        payload: { partIndex: 0, noteIndex: 0 },
+      });
+
+      expect(state.parts[0].notes[0]).toMatchObject({
+        repeatStart: true,
+        repeatEnd: true,
+      });
+
+      const startOff = scoreReducer(state, {
+        type: "TOGGLE_REPEAT_START",
+        payload: { partIndex: 0, noteIndex: 0 },
+      });
+      expect(startOff.parts[0].notes[0].repeatStart).toBeUndefined();
+      expect(startOff.parts[0].notes[0].repeatEnd).toBe(true);
+    });
+
+    it("works on a rest", () => {
+      const withRest = scoreReducer(initialScoreState, {
+        type: "ADD_REST",
+        payload: { duration: "quarter" },
+      });
+      const marked = scoreReducer(withRest, {
+        type: "TOGGLE_REPEAT_START",
+        payload: { partIndex: 0, noteIndex: 0 },
+      });
+
+      expect(marked.parts[0].notes[0].type).toBe("rest");
+      expect(marked.parts[0].notes[0].repeatStart).toBe(true);
+    });
+
+    it("changes nothing else about the element or the score", () => {
+      const before = twoNotes();
+      const after = scoreReducer(before, {
+        type: "TOGGLE_REPEAT_START",
+        payload: { partIndex: 0, noteIndex: 0 },
+      });
+
+      expect(after.parts[0].notes).toHaveLength(before.parts[0].notes.length);
+      expect(after.parts[0].notes[0]).toMatchObject({
+        pitch: "C",
+        octave: "middle",
+        duration: "quarter",
+      });
+    });
+
+    it("leaves the other markers alone", () => {
+      let state = scoreReducer(twoNotes(), {
+        type: "TOGGLE_SPACE",
+        payload: { partIndex: 0, noteIndex: 0 },
+      });
+      state = scoreReducer(state, {
+        type: "CYCLE_MEASURE_ACCENT",
+        payload: { partIndex: 0, noteIndex: 0 },
+      });
+      state = scoreReducer(state, {
+        type: "TOGGLE_REPEAT_START",
+        payload: { partIndex: 0, noteIndex: 0 },
+      });
+
+      expect(state.parts[0].notes[0]).toMatchObject({
+        spaceAfter: true,
+        measureAccent: "on",
+        repeatStart: true,
+      });
+    });
+
+    it("ignores an out-of-range index", () => {
+      const state = twoNotes();
+      expect(
+        scoreReducer(state, {
+          type: "TOGGLE_REPEAT_END",
+          payload: { partIndex: 0, noteIndex: 99 },
+        }),
+      ).toBe(state);
+    });
+  });
 });

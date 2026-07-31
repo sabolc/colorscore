@@ -13,6 +13,7 @@ import {
   glyphPath,
   glyphHalfPaths,
   measureAccentPath,
+  repeatSignParts,
   type CircleLayout,
   type Glyph,
 } from "./circlesLayout";
@@ -115,6 +116,28 @@ function renderRestGlyph(glyph: Glyph): React.ReactNode {
 }
 
 /**
+ * Renders one repeat sign: a thick and a thin vertical line with two dots on
+ * the side the repeated section lies on.
+ */
+function renderRepeatSign(
+  cx: number,
+  cy: number,
+  radius: number,
+  facing: "left" | "right"
+): React.ReactNode {
+  const { thick, thin, dots } = repeatSignParts(cx, cy, radius, facing);
+  return (
+    <g className="repeat-sign" data-facing={facing}>
+      <rect {...thick} fill="#333333" />
+      <rect {...thin} fill="#333333" />
+      {dots.map((dot, i) => (
+        <circle key={`dot-${i}`} cx={dot.cx} cy={dot.cy} r={dot.r} fill="#333333" />
+      ))}
+    </g>
+  );
+}
+
+/**
  * Renders a single note or rest symbol with its octave dots, selection ring,
  * lyric, and line-break indicator.
  */
@@ -176,6 +199,12 @@ function renderSymbol(
       style={{ cursor: "pointer" }}
       data-testid={testId}
     >
+      {/* Repeat signs — this project's convention, not the method's */}
+      {symbol.repeatStartX !== undefined &&
+        renderRepeatSign(symbol.repeatStartX, symbol.cy, symbol.radius, "right")}
+      {symbol.repeatEndX !== undefined &&
+        renderRepeatSign(symbol.repeatEndX, symbol.cy, symbol.radius, "left")}
+
       {/* Measure accent — the ULWILA stress mark that replaces bar lines */}
       {symbol.hasMeasureAccent && (
         <path
