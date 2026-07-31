@@ -5,6 +5,10 @@
 
 A web-based music notation editor using the ULWILA color system — a 7-color method for teaching music to children, including those with disabilities.
 
+> **Using the editor?** A full user manual in Hungarian is in
+> **[KEZIKONYV.md](KEZIKONYV.md)** — written for teachers, therapists and
+> parents rather than developers.
+
 ## About the ULWILA Method
 
 The **ULWILA method** (named after **Ul**lrich and **Wi**lbert) is a color-based music notation system developed by German special education teacher **Heinrich Ullrich**. It was adapted for Hungarian use by **Vető Anna** in the 1990s and is widely used in Hungary for teaching music to children with intellectual disabilities, kindergartners, families, and anyone who cannot or does not want to learn traditional staff notation.
