@@ -277,7 +277,7 @@ describe("NoteInputPanel", () => {
       const { container } = renderWithScore([quarter("C"), quarter("D"), quarter("E")], 1);
 
       fireEvent.click(screen.getByLabelText("G - G (Sol)"));
-      fireEvent.click(screen.getByLabelText("Add note to score"));
+      fireEvent.click(screen.getByLabelText("Insert note after the selected element"));
 
       expect(renderedPitches(container)).toEqual(["C", "D", "G", "E"]);
     });
@@ -295,9 +295,9 @@ describe("NoteInputPanel", () => {
       const { container } = renderWithScore([quarter("C"), quarter("E")], 0);
 
       fireEvent.click(screen.getByLabelText("G - G (Sol)"));
-      fireEvent.click(screen.getByLabelText("Add note to score"));
+      fireEvent.click(screen.getByLabelText("Insert note after the selected element"));
       fireEvent.click(screen.getByLabelText("A - A (La)"));
-      fireEvent.click(screen.getByLabelText("Add note to score"));
+      fireEvent.click(screen.getByLabelText("Insert note after the selected element"));
 
       // The selection followed the first insert, so the second lands after it
       expect(renderedPitches(container)).toEqual(["C", "G", "A", "E"]);
@@ -306,10 +306,25 @@ describe("NoteInputPanel", () => {
     it("inserts a rest after the selected element too", () => {
       const { container } = renderWithScore([quarter("C"), quarter("E")], 0);
 
-      fireEvent.click(screen.getByLabelText("Add rest to score"));
+      fireEvent.click(screen.getByLabelText("Insert rest after the selected element"));
 
       expect(container.querySelectorAll(".rest-symbol").length).toBe(1);
       expect(renderedPitches(container)).toEqual(["C", "E"]);
+    });
+  it("says whether it will add or insert", () => {
+      const { rerender } = renderWithScore([quarter("C"), quarter("D")]);
+      expect(screen.getByLabelText("Add note to score")).toBeInTheDocument();
+      expect(screen.getByLabelText("Add rest to score")).toBeInTheDocument();
+      rerender(<></>);
+
+      renderWithScore([quarter("C"), quarter("D")], 0);
+      expect(
+        screen.getByLabelText("Insert note after the selected element"),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByLabelText("Insert rest after the selected element"),
+      ).toBeInTheDocument();
+      expect(screen.queryByLabelText("Add note to score")).toBeNull();
     });
   });
 });

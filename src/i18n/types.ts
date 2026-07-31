@@ -36,8 +36,12 @@ export interface Translations {
   noteInput: {
     addNote: string;
     addRest: string;
+    insertNote: string;
+    insertRest: string;
     addNoteAria: string;
     addRestAria: string;
+    insertNoteAria: string;
+    insertRestAria: string;
     duration: string;
     durationSelector: string;
     octave: string;

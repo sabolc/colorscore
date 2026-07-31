@@ -27,6 +27,10 @@ export default function NoteInputPanel() {
   const insertAfter =
     selection && getSelectedCount(selection) === 1 ? selection.focusIndex : undefined;
 
+  // The buttons say which of their two jobs they will do, so the change of
+  // behaviour is visible before the button is pressed
+  const willInsert = insertAfter !== undefined;
+
   /** Move the selection onto the element just inserted, so a run continues. */
   const selectInserted = () => {
     if (insertAfter === undefined || !selection) return;
@@ -138,17 +142,17 @@ export default function NoteInputPanel() {
           className={styles.addNoteButton}
           onClick={handleAddNote}
           disabled={!selectedPitch}
-          aria-label={t.noteInput.addNoteAria}
+          aria-label={willInsert ? t.noteInput.insertNoteAria : t.noteInput.addNoteAria}
         >
-          {t.noteInput.addNote}
+          {willInsert ? t.noteInput.insertNote : t.noteInput.addNote}
         </button>
         <button
           type="button"
           className={styles.restButton}
           onClick={handleAddRest}
-          aria-label={t.noteInput.addRestAria}
+          aria-label={willInsert ? t.noteInput.insertRestAria : t.noteInput.addRestAria}
         >
-          {t.noteInput.addRest}
+          {willInsert ? t.noteInput.insertRest : t.noteInput.addRest}
         </button>
       </div>
 

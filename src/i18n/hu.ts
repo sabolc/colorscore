@@ -33,8 +33,12 @@ export const hu: Translations = {
   noteInput: {
     addNote: "Hang hozzáadása",
     addRest: "Szünet hozzáadása",
+    insertNote: "Hang beszúrása",
+    insertRest: "Szünet beszúrása",
     addNoteAria: "Hang hozzáadása a kottához",
     addRestAria: "Szünet hozzáadása a kottához",
+    insertNoteAria: "Hang beszúrása a kijelölt elem után",
+    insertRestAria: "Szünet beszúrása a kijelölt elem után",
     duration: "Időtartam:",
     durationSelector: "Időtartam választó",
     octave: "Oktáv:",

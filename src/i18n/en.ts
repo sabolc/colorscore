@@ -33,8 +33,12 @@ export const en: Translations = {
   noteInput: {
     addNote: "Add Note",
     addRest: "Add Rest",
+    insertNote: "Insert Note",
+    insertRest: "Insert Rest",
     addNoteAria: "Add note to score",
     addRestAria: "Add rest to score",
+    insertNoteAria: "Insert note after the selected element",
+    insertRestAria: "Insert rest after the selected element",
     duration: "Duration:",
     durationSelector: "Duration selector",
     octave: "Octave:",
