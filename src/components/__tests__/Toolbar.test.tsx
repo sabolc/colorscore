@@ -3,11 +3,30 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Toolbar } from "../Toolbar";
 import { ScoreProvider } from "../../store/ScoreContext";
 import { LanguageProvider } from "../../i18n";
+import type { Score } from "../../models/types";
+
+const makeScore = (overrides: Partial<Score> = {}): Score => ({
+  title: "Test",
+  renderingMode: "staff",
+  timeSignature: { beats: 4, beatValue: 4 },
+  clef: "treble",
+  parts: [{ notes: [] }],
+  ...overrides,
+});
+
+const renderToolbar = (score: Score) =>
+  render(
+    <LanguageProvider>
+      <ScoreProvider initialScore={score}>
+        <Toolbar />
+      </ScoreProvider>
+    </LanguageProvider>,
+  );
 
 describe("Toolbar", () => {
   it("renders the title input", () => {
@@ -341,5 +360,61 @@ describe("Toolbar", () => {
 
     expect(staffButton).toHaveAttribute("aria-pressed");
     expect(circlesButton).toHaveAttribute("aria-pressed");
+  });
+
+  describe("controls that cannot apply", () => {
+    it("disables the clef selector in circles mode", () => {
+      renderToolbar(makeScore({ renderingMode: "circles" }));
+
+      expect(screen.getByLabelText("Clef")).toBeDisabled();
+    });
+
+    it("enables the clef selector in staff mode", () => {
+      renderToolbar(makeScore({ renderingMode: "staff" }));
+
+      expect(screen.getByLabelText("Clef")).toBeEnabled();
+    });
+  });
+
+  describe("load failure", () => {
+    it("shows the reason instead of only logging it", async () => {
+      renderToolbar(makeScore());
+
+      const input = screen.getByTestId("load-file-input");
+      const bad = new File(["{ not valid json"], "broken.json", {
+        type: "application/json",
+      });
+      fireEvent.change(input, { target: { files: [bad] } });
+
+      const message = await screen.findByTestId("toolbar-message");
+      expect(message).toBeInTheDocument();
+      expect(message.textContent).toMatch(/Could not load the score file/);
+    });
+
+    it("announces the message to assistive technology", async () => {
+      renderToolbar(makeScore());
+
+      const input = screen.getByTestId("load-file-input");
+      fireEvent.change(input, {
+        target: { files: [new File(["nope"], "x.json", { type: "application/json" })] },
+      });
+
+      const message = await screen.findByTestId("toolbar-message");
+      expect(message).toHaveAttribute("role", "alert");
+    });
+
+    it("leaves the open score untouched when a file is rejected", async () => {
+      renderToolbar(makeScore({ title: "Keep me" }));
+
+      const input = screen.getByTestId("load-file-input");
+      fireEvent.change(input, {
+        target: { files: [new File(["bad"], "x.json", { type: "application/json" })] },
+      });
+
+      await screen.findByTestId("toolbar-message");
+      expect((screen.getByLabelText("Score title") as HTMLInputElement).value).toBe(
+        "Keep me",
+      );
+    });
   });
 });

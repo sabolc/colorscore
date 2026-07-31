@@ -13,6 +13,9 @@ export interface Translations {
     scoreTitle: string;
     timeSignature: string;
     clef: string;
+    clefStaffOnly: string;
+    loadFailed: string;
+    exportFailed: string;
     treble: string;
     bass: string;
     staff: string;

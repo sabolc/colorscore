@@ -171,3 +171,16 @@
     justify-content: flex-start;
   }
 }
+
+/* Load and export failures are shown here rather than only logged, so a
+   rejected file does not look like a click that did nothing. */
+.message {
+  flex-basis: 100%;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #b00020;
+  border-radius: 4px;
+  background: #fdecee;
+  color: #b00020;
+  font-size: 0.875rem;
+}

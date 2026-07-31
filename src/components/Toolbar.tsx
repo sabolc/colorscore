@@ -4,7 +4,7 @@
  * Main toolbar providing score metadata controls and action buttons.
  */
 
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { useScore, useScoreDispatch } from "../store/ScoreContext";
 import type { Clef } from "../models/types";
 import { exportPdf } from "../export/pdfExport";
@@ -53,25 +53,41 @@ export function Toolbar() {
     });
   };
 
+  // A rejected file must say so; console-only logging makes it look like the
+  // click did nothing (SPEC-EDITOR-UI-R-LOAD-ERROR-VISIBLE).
+  const [message, setMessage] = useState<string | null>(null);
+
   const handleClefChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     dispatch({ type: "SET_CLEF", payload: e.target.value as Clef });
   };
 
   const handleExportPdf = async () => {
     const svg = findScoreSvg();
-    if (!svg) return;
+    if (!svg) {
+      setMessage(t.toolbar.exportFailed);
+      return;
+    }
+    setMessage(null);
     await exportPdf(svg, score.title);
   };
 
   const handleExportPng = async () => {
     const svg = findScoreSvg();
-    if (!svg) return;
+    if (!svg) {
+      setMessage(t.toolbar.exportFailed);
+      return;
+    }
+    setMessage(null);
     await exportPng(svg, score.title);
   };
 
   const handleExportSvg = () => {
     const svg = findScoreSvg();
-    if (!svg) return;
+    if (!svg) {
+      setMessage(t.toolbar.exportFailed);
+      return;
+    }
+    setMessage(null);
     exportSvg(svg, score.title);
   };
 
@@ -89,9 +105,10 @@ export function Toolbar() {
     try {
       const loaded = await loadScore(file);
       dispatch({ type: "LOAD_SCORE", payload: loaded });
+      setMessage(null);
     } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error("Failed to load score:", err);
+      const reason = err instanceof Error ? err.message : String(err);
+      setMessage(`${t.toolbar.loadFailed}: ${reason}`);
     }
     // Reset input so the same file can be loaded again
     e.target.value = "";
@@ -134,6 +151,12 @@ export function Toolbar() {
           onChange={handleClefChange}
           aria-label={t.toolbar.clef}
           className={styles.selectControl}
+          /* A clef places pitches on a staff; circles mode draws none, so
+             here it would be a live-looking control that does nothing. */
+          disabled={score.renderingMode === "circles"}
+          title={
+            score.renderingMode === "circles" ? t.toolbar.clefStaffOnly : undefined
+          }
         >
           <option value="treble">{t.toolbar.treble}</option>
           <option value="bass">{t.toolbar.bass}</option>
@@ -217,6 +240,15 @@ export function Toolbar() {
           data-testid="load-file-input"
         />
       </div>
+      {message && (
+        <div
+          className={styles.message}
+          role="alert"
+          data-testid="toolbar-message"
+        >
+          {message}
+        </div>
+      )}
     </div>
   );
 }
