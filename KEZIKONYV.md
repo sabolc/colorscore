@@ -3,6 +3,8 @@
 Ez a program színes kottát készít az **ULWILA módszer** szerint. Nem kell hozzá
 kottaolvasás: a gyereknek elég a színeket felismernie.
 
+Ez a kézikönyv **[nyomtatható PDF-ként](KEZIKONYV.pdf)** is elérhető.
+
 A kézikönyv a program használatáról szól. Magáról a módszerről a végén, a
 [Források](#források) alatt találsz irodalmat.
 

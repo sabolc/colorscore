@@ -6,8 +6,10 @@
 A web-based music notation editor using the ULWILA color system — a 7-color method for teaching music to children, including those with disabilities.
 
 > **Using the editor?** A full user manual in Hungarian is in
-> **[KEZIKONYV.md](KEZIKONYV.md)** — written for teachers, therapists and
-> parents rather than developers.
+> **[KEZIKONYV.md](KEZIKONYV.md)**, also as a printable
+> **[PDF](KEZIKONYV.pdf)** — written for teachers, therapists and parents
+> rather than developers. Regenerate the PDF with
+> `python tools-md2pdf.py KEZIKONYV.md KEZIKONYV.pdf`.
 
 ## About the ULWILA Method
 
