@@ -60,6 +60,12 @@ export interface Rest {
   type: "rest";
   duration: Duration;
   /**
+   * Carried over when a note is converted into this rest, so converting back
+   * restores the syllable. Never displayed while the element is a rest — the
+   * rest is a container for it, not its owner.
+   */
+  lyric?: string;
+  /**
    * Manual override for the measure accent — the black triangle that ULWILA
    * uses instead of bar lines. Absent means the accent is derived from the
    * time signature. Unrelated to `accented`, which marks an altered/sharp

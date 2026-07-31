@@ -55,6 +55,8 @@ export const en: Translations = {
     space: "Gap",
     toggleSpace: "Toggle a grouping gap after this note (spacing only, not a rest)",
     accented: "Sharp",
+    convertToRest: "Convert to rest",
+    convertToNote: "Convert to note",
     toggleAccented: "Make this note sharp (only C, D, F, G and A have one)",
     repeatStart: "Repeat from",
     repeatEnd: "Repeat to",

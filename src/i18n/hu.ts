@@ -55,6 +55,8 @@ export const hu: Translations = {
     space: "Szóköz",
     toggleSpace: "Szóköz az adott hang után (csak térköz, nem szünet)",
     accented: "Módosított",
+    convertToRest: "Átalakítás szünetté",
+    convertToNote: "Átalakítás hanggá",
     toggleAccented: "Félhang (kereszt) — csak a C, D, F, G és A hangnak van",
     repeatStart: "Ismétlés innen",
     repeatEnd: "Ismétlés eddig",

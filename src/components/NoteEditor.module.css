@@ -326,3 +326,29 @@
 .deleteButton:active {
   transform: scale(0.98);
 }
+
+/* Convert and delete share a row rather than stacking; the panel is already
+   the tallest thing in the editor. */
+.actionRow {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.convertButton {
+  flex: 1 1 50%;
+  padding: 0.5rem 0.75rem;
+  min-height: 44px;
+  border: 2px solid #0066cc;
+  border-radius: 4px;
+  background: white;
+  color: #0066cc;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.convertButton:hover {
+  background: #e8f0fe;
+}

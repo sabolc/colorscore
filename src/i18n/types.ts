@@ -59,6 +59,8 @@ export interface Translations {
     toggleSpace: string;
     accented: string;
     toggleAccented: string;
+    convertToRest: string;
+    convertToNote: string;
     repeatStart: string;
     repeatEnd: string;
     toggleRepeatStart: string;

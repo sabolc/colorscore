@@ -588,4 +588,78 @@ describe("NoteEditor", () => {
       }
     });
   });
+
+  describe("converting between note and rest", () => {
+    it("labels the direction for a note", () => {
+      renderWithSelection(
+        makeScore([{ type: "note", pitch: "C", octave: "middle", duration: "quarter" }]),
+        0,
+        0,
+      );
+
+      expect(screen.getByLabelText("Convert to rest")).toBeInTheDocument();
+      expect(screen.queryByLabelText("Convert to note")).toBeNull();
+    });
+
+    it("labels the direction for a rest", () => {
+      renderWithSelection(makeScore([{ type: "rest", duration: "quarter" }]), 0, 0);
+
+      expect(screen.getByLabelText("Convert to note")).toBeInTheDocument();
+      expect(screen.queryByLabelText("Convert to rest")).toBeNull();
+    });
+
+    it("turns a note into a rest and flips the label", () => {
+      renderWithSelection(
+        makeScore([{ type: "note", pitch: "C", octave: "middle", duration: "half" }]),
+        0,
+        0,
+      );
+
+      fireEvent.click(screen.getByLabelText("Convert to rest"));
+
+      expect(screen.getByLabelText("Convert to note")).toBeInTheDocument();
+      // pitch and octave are now unavailable, duration is not
+      expect(screen.getByLabelText("Set pitch to C - C (Do)")).toBeDisabled();
+      expect(
+        (screen.getByLabelText("Duration selector") as HTMLSelectElement).value,
+      ).toBe("half");
+    });
+
+    it("carries the markers across the conversion", () => {
+      renderWithSelection(
+        makeScore([
+          {
+            type: "note",
+            pitch: "C",
+            octave: "middle",
+            duration: "quarter",
+            spaceAfter: true,
+            repeatEnd: true,
+          },
+        ]),
+        0,
+        0,
+      );
+
+      fireEvent.click(screen.getByLabelText("Convert to rest"));
+
+      expect(
+        screen.getByLabelText(
+          "Toggle a grouping gap after this note (spacing only, not a rest)",
+        ),
+      ).toHaveAttribute("aria-pressed", "true");
+      expect(
+        screen.getByLabelText("End a repeated section after this element"),
+      ).toHaveAttribute("aria-pressed", "true");
+    });
+
+    it("converts a rest back into a note", () => {
+      renderWithSelection(makeScore([{ type: "rest", duration: "eighth" }]), 0, 0);
+
+      fireEvent.click(screen.getByLabelText("Convert to note"));
+
+      expect(screen.getByLabelText("Convert to rest")).toBeInTheDocument();
+      expect(screen.getByLabelText("Set pitch to C - C (Do)")).toBeEnabled();
+    });
+  });
 });

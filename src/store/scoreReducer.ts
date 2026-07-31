@@ -20,9 +20,16 @@ import type {
 export type ScoreAction =
   | {
       type: "ADD_NOTE";
-      payload: { pitch: Pitch; octave: Octave; duration: Duration; accented?: boolean };
+      payload: {
+        pitch: Pitch;
+        octave: Octave;
+        duration: Duration;
+        accented?: boolean;
+        /** Insert directly after this index; append when absent. */
+        insertAfter?: number;
+      };
     }
-  | { type: "ADD_REST"; payload: { duration: Duration } }
+  | { type: "ADD_REST"; payload: { duration: Duration; insertAfter?: number } }
   | { type: "SET_TITLE"; payload: string }
   | { type: "SET_TIME_SIGNATURE"; payload: TimeSignature }
   | { type: "SET_CLEF"; payload: Clef }
@@ -54,6 +61,17 @@ export type ScoreAction =
       payload: { partIndex: number; noteIndex: number };
     }
   | {
+      type: "CONVERT_ELEMENT";
+      payload: {
+        partIndex: number;
+        noteIndex: number;
+        /** Used when a rest becomes a note; ignored the other way round. */
+        pitch: Pitch;
+        octave: Octave;
+        accented?: boolean;
+      };
+    }
+  | {
       type: "CYCLE_MEASURE_ACCENT";
       payload: { partIndex: number; noteIndex: number };
     }
@@ -78,6 +96,21 @@ export const initialScoreState: Score = {
   parts: [{ notes: [] }],
 };
 
+/**
+ * Place a new element after `insertAfter`, or at the end when that is absent
+ * or out of range.
+ */
+function withElementInserted(
+  notes: NoteOrRest[],
+  element: NoteOrRest,
+  insertAfter: number | undefined,
+): NoteOrRest[] {
+  if (insertAfter === undefined || insertAfter < 0 || insertAfter >= notes.length) {
+    return [...notes, element];
+  }
+  return [...notes.slice(0, insertAfter + 1), element, ...notes.slice(insertAfter + 1)];
+}
+
 export function scoreReducer(state: Score, action: ScoreAction): Score {
   switch (action.type) {
     case "ADD_NOTE": {
@@ -94,7 +127,11 @@ export function scoreReducer(state: Score, action: ScoreAction): Score {
         parts: [
           {
             ...state.parts[0],
-            notes: [...state.parts[0].notes, newNote],
+            notes: withElementInserted(
+              state.parts[0].notes,
+              newNote,
+              action.payload.insertAfter,
+            ),
           },
           ...state.parts.slice(1),
         ],
@@ -112,7 +149,11 @@ export function scoreReducer(state: Score, action: ScoreAction): Score {
         parts: [
           {
             ...state.parts[0],
-            notes: [...state.parts[0].notes, newRest],
+            notes: withElementInserted(
+              state.parts[0].notes,
+              newRest,
+              action.payload.insertAfter,
+            ),
           },
           ...state.parts.slice(1),
         ],
@@ -291,6 +332,53 @@ export function scoreReducer(state: Score, action: ScoreAction): Score {
 
       const newNotes = [...part.notes];
       newNotes[noteIndex] = updated;
+      const newParts = [...state.parts];
+      newParts[partIndex] = { ...part, notes: newNotes };
+
+      return { ...state, parts: newParts };
+    }
+
+    case "CONVERT_ELEMENT": {
+      const { partIndex, noteIndex, pitch, octave, accented } = action.payload;
+      const part = state.parts[partIndex];
+      if (!part) return state;
+      const existing = part.notes[noteIndex];
+      if (!existing) return state;
+
+      // What survives follows one rule: a property describing the element's
+      // PLACE in the score carries over, one describing its SOUND does not.
+      // Duration is place — it decides how much room the element takes and
+      // where the next one starts. The markers are place. Pitch, octave and
+      // the sharp flag are sound.
+      //
+      // The lyric is the deliberate exception: sound-side, but carried anyway
+      // and hidden on the rest, because this editor has no undo and a
+      // mis-click would otherwise destroy typed text for good.
+      const carried = {
+        duration: existing.duration,
+        ...(existing.measureAccent !== undefined
+          ? { measureAccent: existing.measureAccent }
+          : {}),
+        ...(existing.repeatStart ? { repeatStart: true as const } : {}),
+        ...(existing.repeatEnd ? { repeatEnd: true as const } : {}),
+        ...(existing.spaceAfter ? { spaceAfter: true as const } : {}),
+        ...(existing.lineBreakAfter ? { lineBreakAfter: true as const } : {}),
+        ...(existing.lyric ? { lyric: existing.lyric } : {}),
+      };
+
+      const converted: NoteOrRest =
+        existing.type === "note"
+          ? { type: "rest", ...carried }
+          : {
+              type: "note",
+              pitch,
+              octave,
+              ...carried,
+              ...(accented ? { accented: true as const } : {}),
+            };
+
+      const newNotes = [...part.notes];
+      newNotes[noteIndex] = converted;
       const newParts = [...state.parts];
       newParts[partIndex] = { ...part, notes: newNotes };
 

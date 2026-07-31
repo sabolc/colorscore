@@ -4,22 +4,50 @@
  * This component provides the user interface for inputting notes and rests.
  */
 
-import { useState } from "react";
+
 import type { Pitch, Octave, Duration } from "../models/types";
 import { ULWILA_COLORS, PITCH_NAMES, ACCENTED_PITCHES } from "../constants/colors";
 import { useScoreDispatch } from "../store/ScoreContext";
+import { useSelection, useSelectionDispatch } from "../store/SelectionContext";
+import { getSelectedCount } from "../store/selectionReducer";
+import { useNoteInput } from "../store/NoteInputContext";
 import { useTranslation } from "../i18n";
 import styles from "./NoteInputPanel.module.css";
 
 export default function NoteInputPanel() {
   const dispatch = useScoreDispatch();
+  const selection = useSelection();
+  const selectionDispatch = useSelectionDispatch();
   const { t } = useTranslation();
 
-  // Local state for selected parameters
-  const [selectedPitch, setSelectedPitch] = useState<Pitch | null>(null);
-  const [selectedDuration, setSelectedDuration] = useState<Duration>("quarter");
-  const [selectedOctave, setSelectedOctave] = useState<Octave>("middle");
-  const [selectedAccented, setSelectedAccented] = useState(false);
+  /**
+   * Where a new element goes: directly after the selected one when exactly one
+   * is selected, otherwise appended to the end as before.
+   */
+  const insertAfter =
+    selection && getSelectedCount(selection) === 1 ? selection.focusIndex : undefined;
+
+  /** Move the selection onto the element just inserted, so a run continues. */
+  const selectInserted = () => {
+    if (insertAfter === undefined || !selection) return;
+    selectionDispatch({
+      type: "SELECT_NOTE",
+      payload: { partIndex: selection.partIndex, noteIndex: insertAfter + 1 },
+    });
+  };
+
+  // The palette's selection now lives in a context, so the Note Editor can
+  // read it when converting a rest into a note.
+  const {
+    pitch: selectedPitch,
+    duration: selectedDuration,
+    octave: selectedOctave,
+    accented: selectedAccented,
+    setPitch: setSelectedPitch,
+    setDuration: setSelectedDuration,
+    setOctave: setSelectedOctave,
+    setAccented: setSelectedAccented,
+  } = useNoteInput();
 
   const canBeAccented = selectedPitch !== null && ACCENTED_PITCHES.includes(selectedPitch);
 
@@ -40,8 +68,10 @@ export default function NoteInputPanel() {
           octave: selectedOctave,
           duration: selectedDuration,
           ...(selectedAccented ? { accented: true } : {}),
+          ...(insertAfter !== undefined ? { insertAfter } : {}),
         },
       });
+      selectInserted();
       // Keep pitch selected so user can rapidly add same pitch
     }
   };
@@ -51,8 +81,10 @@ export default function NoteInputPanel() {
       type: "ADD_REST",
       payload: {
         duration: selectedDuration,
+        ...(insertAfter !== undefined ? { insertAfter } : {}),
       },
     });
+    selectInserted();
   };
 
   const durations: Duration[] = ["whole", "half", "quarter", "eighth", "sixteenth"];

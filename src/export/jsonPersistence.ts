@@ -235,11 +235,19 @@ function validateNoteOrRest(
       throw new Error(`${prefix}: lineBreakAfter must be a boolean if provided`);
     }
 
+    // A rest may carry a lyric across a conversion; it is stored, never shown
+    if (obj.lyric !== undefined && typeof obj.lyric !== "string") {
+      throw new Error(`${prefix}: lyric must be a string if provided`);
+    }
+
     const rest: NoteOrRest = {
       type: "rest",
       duration: obj.duration as Duration,
     };
 
+    if (obj.lyric !== undefined) {
+      (rest as { lyric: string }).lyric = obj.lyric as string;
+    }
     if (obj.measureAccent !== undefined) {
       (rest as { measureAccent: MeasureAccent }).measureAccent =
         obj.measureAccent as MeasureAccent;

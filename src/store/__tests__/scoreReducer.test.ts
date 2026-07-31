@@ -652,4 +652,170 @@ describe("scoreReducer", () => {
       });
     });
   });
+
+  describe("inserting", () => {
+    const threeNotes = () => {
+      let state = initialScoreState;
+      for (const pitch of ["C", "D", "E"] as const) {
+        state = scoreReducer(state, {
+          type: "ADD_NOTE",
+          payload: { pitch, octave: "middle", duration: "quarter" },
+        });
+      }
+      return state;
+    };
+    const pitches = (s: Score) =>
+      s.parts[0].notes.map((n) => (n.type === "note" ? n.pitch : "rest"));
+
+    it("places a new note directly after the given index", () => {
+      const inserted = scoreReducer(threeNotes(), {
+        type: "ADD_NOTE",
+        payload: { pitch: "G", octave: "middle", duration: "quarter", insertAfter: 1 },
+      });
+
+      expect(pitches(inserted)).toEqual(["C", "D", "G", "E"]);
+    });
+
+    it("appends when no index is given", () => {
+      const appended = scoreReducer(threeNotes(), {
+        type: "ADD_NOTE",
+        payload: { pitch: "G", octave: "middle", duration: "quarter" },
+      });
+
+      expect(pitches(appended)).toEqual(["C", "D", "E", "G"]);
+    });
+
+    it("inserts a rest the same way", () => {
+      const inserted = scoreReducer(threeNotes(), {
+        type: "ADD_REST",
+        payload: { duration: "quarter", insertAfter: 0 },
+      });
+
+      expect(pitches(inserted)).toEqual(["C", "rest", "D", "E"]);
+    });
+
+    it("appends when the index is past the end", () => {
+      const inserted = scoreReducer(threeNotes(), {
+        type: "ADD_NOTE",
+        payload: { pitch: "G", octave: "middle", duration: "quarter", insertAfter: 99 },
+      });
+
+      expect(pitches(inserted)).toEqual(["C", "D", "E", "G"]);
+    });
+
+    it("inserting after the last element is the same as appending", () => {
+      const inserted = scoreReducer(threeNotes(), {
+        type: "ADD_NOTE",
+        payload: { pitch: "G", octave: "middle", duration: "quarter", insertAfter: 2 },
+      });
+
+      expect(pitches(inserted)).toEqual(["C", "D", "E", "G"]);
+    });
+  });
+
+  describe("converting between note and rest", () => {
+    const convert = (state: Score, noteIndex: number) =>
+      scoreReducer(state, {
+        type: "CONVERT_ELEMENT",
+        payload: { partIndex: 0, noteIndex, pitch: "G", octave: "upper" },
+      });
+
+    const markedNote = () => {
+      let state = scoreReducer(initialScoreState, {
+        type: "ADD_NOTE",
+        payload: { pitch: "C", octave: "middle", duration: "half", accented: true },
+      });
+      state = scoreReducer(state, {
+        type: "SET_LYRIC",
+        payload: { partIndex: 0, noteIndex: 0, lyric: "Bo" },
+      });
+      state = scoreReducer(state, {
+        type: "TOGGLE_SPACE",
+        payload: { partIndex: 0, noteIndex: 0 },
+      });
+      state = scoreReducer(state, {
+        type: "TOGGLE_REPEAT_END",
+        payload: { partIndex: 0, noteIndex: 0 },
+      });
+      return scoreReducer(state, {
+        type: "CYCLE_MEASURE_ACCENT",
+        payload: { partIndex: 0, noteIndex: 0 },
+      });
+    };
+
+    it("turns a note into a rest in place", () => {
+      const converted = convert(markedNote(), 0);
+
+      expect(converted.parts[0].notes).toHaveLength(1);
+      expect(converted.parts[0].notes[0].type).toBe("rest");
+    });
+
+    it("carries over what describes the element's place", () => {
+      const rest = convert(markedNote(), 0).parts[0].notes[0];
+
+      expect(rest).toMatchObject({
+        duration: "half",
+        spaceAfter: true,
+        repeatEnd: true,
+        measureAccent: "on",
+      });
+    });
+
+    it("drops what describes its sound", () => {
+      const rest = convert(markedNote(), 0).parts[0].notes[0];
+
+      expect(rest).not.toHaveProperty("pitch");
+      expect(rest).not.toHaveProperty("octave");
+      expect(rest).not.toHaveProperty("accented");
+    });
+
+    it("keeps the lyric hidden on the rest and restores it on the way back", () => {
+      const asRest = convert(markedNote(), 0);
+      expect(asRest.parts[0].notes[0]).toMatchObject({ type: "rest", lyric: "Bo" });
+
+      const backToNote = convert(asRest, 0);
+      expect(backToNote.parts[0].notes[0]).toMatchObject({
+        type: "note",
+        lyric: "Bo",
+        pitch: "G",
+        octave: "upper",
+      });
+    });
+
+    it("takes pitch and octave from the payload when a rest becomes a note", () => {
+      const withRest = scoreReducer(initialScoreState, {
+        type: "ADD_REST",
+        payload: { duration: "eighth" },
+      });
+      const note = convert(withRest, 0).parts[0].notes[0];
+
+      expect(note).toMatchObject({
+        type: "note",
+        pitch: "G",
+        octave: "upper",
+        duration: "eighth",
+      });
+    });
+
+    it("never changes the element count or order", () => {
+      let state = initialScoreState;
+      for (const pitch of ["C", "D", "E"] as const) {
+        state = scoreReducer(state, {
+          type: "ADD_NOTE",
+          payload: { pitch, octave: "middle", duration: "quarter" },
+        });
+      }
+      const converted = convert(state, 1);
+
+      expect(converted.parts[0].notes).toHaveLength(3);
+      expect(converted.parts[0].notes[0]).toMatchObject({ type: "note", pitch: "C" });
+      expect(converted.parts[0].notes[1].type).toBe("rest");
+      expect(converted.parts[0].notes[2]).toMatchObject({ type: "note", pitch: "E" });
+    });
+
+    it("ignores an out-of-range index", () => {
+      const state = markedNote();
+      expect(convert(state, 99)).toBe(state);
+    });
+  });
 });

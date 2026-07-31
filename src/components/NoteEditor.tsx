@@ -11,6 +11,7 @@ import { ULWILA_COLORS, PITCH_NAMES, ACCENTED_PITCHES } from "../constants/color
 import { useScore, useScoreDispatch } from "../store/ScoreContext";
 import { useSelection, useSelectionDispatch } from "../store/SelectionContext";
 import { getSelectedCount, getSelectionRange } from "../store/selectionReducer";
+import { useNoteInput } from "../store/NoteInputContext";
 import { useTranslation } from "../i18n";
 import styles from "./NoteEditor.module.css";
 
@@ -22,6 +23,7 @@ export function NoteEditor() {
   const scoreDispatch = useScoreDispatch();
   const selection = useSelection();
   const selectionDispatch = useSelectionDispatch();
+  const noteInput = useNoteInput();
   const { t } = useTranslation();
 
   if (!selection) {
@@ -120,6 +122,21 @@ export function NoteEditor() {
     scoreDispatch({
       type: "EDIT_NOTE",
       payload: { partIndex, noteIndex, changes: { octave } },
+    });
+  };
+
+  const handleConvert = () => {
+    scoreDispatch({
+      type: "CONVERT_ELEMENT",
+      payload: {
+        partIndex,
+        noteIndex,
+        // A rest becoming a note takes the palette's current selection — that
+        // is already the app's answer to "what note would you add right now"
+        pitch: noteInput.pitch ?? "C",
+        octave: noteInput.octave,
+        ...(noteInput.accented ? { accented: true } : {}),
+      },
     });
   };
 
@@ -332,6 +349,18 @@ export function NoteEditor() {
       </button>
       </div>
 
+      {/* Convert and delete share a row — the panel is already the tallest
+          thing in the editor */}
+      <div className={styles.actionRow}>
+      <button
+        type="button"
+        className={styles.convertButton}
+        onClick={handleConvert}
+        aria-label={isRest ? t.noteEditor.convertToNote : t.noteEditor.convertToRest}
+      >
+        {isRest ? t.noteEditor.convertToNote : t.noteEditor.convertToRest}
+      </button>
+
       {/* Delete Button */}
       <button
         type="button"
@@ -341,6 +370,7 @@ export function NoteEditor() {
       >
         {t.noteEditor.delete}
       </button>
+      </div>
     </div>
   );
 }

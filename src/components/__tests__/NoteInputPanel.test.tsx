@@ -8,12 +8,38 @@ import NoteInputPanel from "../NoteInputPanel";
 import { ScoreProvider } from "../../store/ScoreContext";
 import { LanguageProvider } from "../../i18n";
 import { ULWILA_COLORS, PITCH_NAMES } from "../../constants/colors";
+import { SelectionProvider } from "../../store/SelectionContext";
+import { NoteInputProvider } from "../../store/NoteInputContext";
+import { useSelectionDispatch } from "../../store/SelectionContext";
+import { ScoreCanvas } from "../ScoreCanvas";
+import { useEffect } from "react";
+import type { Score } from "../../models/types";
+
+function SelectOnMount({
+  partIndex,
+  noteIndex,
+  children,
+}: {
+  partIndex: number;
+  noteIndex: number;
+  children: React.ReactNode;
+}) {
+  const dispatch = useSelectionDispatch();
+  useEffect(() => {
+    dispatch({ type: "SELECT_NOTE", payload: { partIndex, noteIndex } });
+  }, [dispatch, partIndex, noteIndex]);
+  return <>{children}</>;
+}
 
 // Helper to render component with required providers
 function renderWithProviders(ui: React.ReactElement) {
   return render(
     <LanguageProvider>
-      <ScoreProvider>{ui}</ScoreProvider>
+      <ScoreProvider>
+        <SelectionProvider>
+          <NoteInputProvider>{ui}</NoteInputProvider>
+        </SelectionProvider>
+      </ScoreProvider>
     </LanguageProvider>
   );
 }
@@ -204,5 +230,86 @@ describe("NoteInputPanel", () => {
     fireEvent.click(upperButton);
     expect(upperButton).toHaveAttribute("aria-pressed", "true");
     expect(middleButton).toHaveAttribute("aria-pressed", "false");
+  });
+
+  describe("insertion point", () => {
+    /** Render the panel next to a canvas so a selection can be made. */
+    const renderWithScore = (notes: Score["parts"][0]["notes"], selectAt?: number) => {
+      const score: Score = {
+        title: "T",
+        renderingMode: "circles",
+        timeSignature: { beats: 4, beatValue: 4 },
+        clef: "treble",
+        parts: [{ notes }],
+      };
+      return render(
+        <LanguageProvider>
+          <ScoreProvider initialScore={score}>
+            <SelectionProvider>
+              <NoteInputProvider>
+                {selectAt !== undefined ? (
+                  <SelectOnMount partIndex={0} noteIndex={selectAt}>
+                    <NoteInputPanel />
+                    <ScoreCanvas />
+                  </SelectOnMount>
+                ) : (
+                  <>
+                    <NoteInputPanel />
+                    <ScoreCanvas />
+                  </>
+                )}
+              </NoteInputProvider>
+            </SelectionProvider>
+          </ScoreProvider>
+        </LanguageProvider>,
+      );
+    };
+
+    const quarter = (pitch: "C" | "D" | "E") =>
+      ({ type: "note", pitch, octave: "middle", duration: "quarter" }) as const;
+
+    const renderedPitches = (container: HTMLElement) =>
+      [...container.querySelectorAll(".note-circle")].map((c) =>
+        c.getAttribute("data-pitch"),
+      );
+
+    it("inserts after the selected element", () => {
+      const { container } = renderWithScore([quarter("C"), quarter("D"), quarter("E")], 1);
+
+      fireEvent.click(screen.getByLabelText("G - G (Sol)"));
+      fireEvent.click(screen.getByLabelText("Add note to score"));
+
+      expect(renderedPitches(container)).toEqual(["C", "D", "G", "E"]);
+    });
+
+    it("appends when nothing is selected", () => {
+      const { container } = renderWithScore([quarter("C"), quarter("D"), quarter("E")]);
+
+      fireEvent.click(screen.getByLabelText("G - G (Sol)"));
+      fireEvent.click(screen.getByLabelText("Add note to score"));
+
+      expect(renderedPitches(container)).toEqual(["C", "D", "E", "G"]);
+    });
+
+    it("keeps inserting in order when several are added in a row", () => {
+      const { container } = renderWithScore([quarter("C"), quarter("E")], 0);
+
+      fireEvent.click(screen.getByLabelText("G - G (Sol)"));
+      fireEvent.click(screen.getByLabelText("Add note to score"));
+      fireEvent.click(screen.getByLabelText("A - A (La)"));
+      fireEvent.click(screen.getByLabelText("Add note to score"));
+
+      // The selection followed the first insert, so the second lands after it
+      expect(renderedPitches(container)).toEqual(["C", "G", "A", "E"]);
+    });
+
+    it("inserts a rest after the selected element too", () => {
+      const { container } = renderWithScore([quarter("C"), quarter("E")], 0);
+
+      fireEvent.click(screen.getByLabelText("Add rest to score"));
+
+      expect(container.querySelectorAll(".rest-symbol").length).toBe(1);
+      expect(renderedPitches(container)).toEqual(["C", "E"]);
+    });
   });
 });

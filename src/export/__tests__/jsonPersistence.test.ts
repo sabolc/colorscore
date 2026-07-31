@@ -824,4 +824,37 @@ describe("loadScore", () => {
       );
     });
   });
+
+  describe("a rest's carried lyric", () => {
+    it("survives save and load", async () => {
+      const score = makeValidScore({
+        parts: [{ notes: [{ type: "rest", duration: "quarter", lyric: "Bo" }] }],
+      });
+
+      const loaded = await loadScore(makeScoreFile(score));
+
+      expect(loaded.parts[0].notes[0]).toMatchObject({ type: "rest", lyric: "Bo" });
+    });
+
+    it("is absent on a rest that never carried one", async () => {
+      const score = makeValidScore({
+        parts: [{ notes: [{ type: "rest", duration: "quarter" }] }],
+      });
+
+      const loaded = await loadScore(makeScoreFile(score));
+
+      expect(loaded.parts[0].notes[0].lyric).toBeUndefined();
+    });
+
+    it("rejects a non-string lyric on a rest", async () => {
+      const bad = {
+        ...makeValidScore(),
+        parts: [{ notes: [{ type: "rest", duration: "quarter", lyric: 7 }] }],
+      };
+
+      await expect(loadScore(makeFile(JSON.stringify(bad)))).rejects.toThrow(
+        /lyric must be a string/,
+      );
+    });
+  });
 });
