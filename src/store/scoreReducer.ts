@@ -7,6 +7,7 @@
 import type {
   Score,
   Note,
+  NoteOrRest,
   Rest,
   Duration,
   Pitch,
@@ -154,10 +155,19 @@ export function scoreReducer(state: Score, action: ScoreAction): Score {
       const { partIndex, noteIndex, changes } = action.payload;
       const part = state.parts[partIndex];
       if (!part) return state;
-      const existingNote = part.notes[noteIndex];
-      if (!existingNote || existingNote.type !== "note") return state;
+      const existing = part.notes[noteIndex];
+      if (!existing) return state;
 
-      const updatedNote: Note = { ...existingNote, ...changes };
+      // A rest has a duration but no pitch, octave or sharp; apply only what it
+      // can hold rather than rejecting the edit outright.
+      const updated: NoteOrRest =
+        existing.type === "rest"
+          ? changes.duration
+            ? { ...existing, duration: changes.duration }
+            : existing
+          : { ...existing, ...changes };
+      if (updated === existing) return state;
+      const updatedNote = updated;
       const newNotes = [...part.notes];
       newNotes[noteIndex] = updatedNote;
 

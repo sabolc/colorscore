@@ -109,12 +109,11 @@ export function NoteEditor() {
   };
 
   const handleDurationChange = (duration: Duration) => {
-    if (isNote) {
-      scoreDispatch({
-        type: "EDIT_NOTE",
-        payload: { partIndex, noteIndex, changes: { duration } },
-      });
-    }
+    // Rests have a duration too — the only thing they cannot take is a pitch
+    scoreDispatch({
+      type: "EDIT_NOTE",
+      payload: { partIndex, noteIndex, changes: { duration } },
+    });
   };
 
   const handleOctaveChange = (octave: Octave) => {

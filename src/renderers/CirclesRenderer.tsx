@@ -23,6 +23,14 @@ import { isNoteSelected, type SelectionState } from "../store/selectionReducer";
 /** Outline color for uncolored rest glyphs. */
 const REST_STROKE = "#333333";
 
+/**
+ * Narrow glyphs — the sixteenth bar, the eighth half circle — get at least this
+ * much width to click on. Rests are drawn unfilled, and an unfilled SVG shape is
+ * only hit-testable on its outline, so without an explicit target a click in the
+ * middle of a rest falls through to the canvas and clears the selection.
+ */
+const MIN_HIT_WIDTH = 14;
+
 export interface CirclesRendererProps {
   score: Score;
   selection: SelectionState | null;
@@ -199,6 +207,16 @@ function renderSymbol(
       style={{ cursor: "pointer" }}
       data-testid={testId}
     >
+      {/* Click target covering the whole symbol, under everything it draws */}
+      <rect
+        x={symbol.cx - Math.max(symbol.width, MIN_HIT_WIDTH) / 2}
+        y={symbol.cy - symbol.radius}
+        width={Math.max(symbol.width, MIN_HIT_WIDTH)}
+        height={symbol.radius * 2}
+        fill="transparent"
+        className="symbol-hit-area"
+      />
+
       {/* Repeat signs — this project's convention, not the method's */}
       {symbol.repeatStartX !== undefined &&
         renderRepeatSign(symbol.repeatStartX, symbol.cy, symbol.radius, "right")}

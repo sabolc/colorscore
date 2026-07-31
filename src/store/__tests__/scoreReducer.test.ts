@@ -573,4 +573,83 @@ describe("scoreReducer", () => {
       ).toBe(state);
     });
   });
+
+  describe("editing a rest", () => {
+    const noteThenRest = () => {
+      let state = scoreReducer(initialScoreState, {
+        type: "ADD_NOTE",
+        payload: { pitch: "C", octave: "middle", duration: "quarter" },
+      });
+      return scoreReducer(state, {
+        type: "ADD_REST",
+        payload: { duration: "quarter" },
+      });
+    };
+
+    it("changes a rest's duration", () => {
+      const edited = scoreReducer(noteThenRest(), {
+        type: "EDIT_NOTE",
+        payload: { partIndex: 0, noteIndex: 1, changes: { duration: "half" } },
+      });
+
+      expect(edited.parts[0].notes[1]).toMatchObject({
+        type: "rest",
+        duration: "half",
+      });
+      // the note beside it is untouched
+      expect(edited.parts[0].notes[0]).toMatchObject({
+        type: "note",
+        pitch: "C",
+        duration: "quarter",
+      });
+    });
+
+    it("does not give a rest a pitch, octave or sharp", () => {
+      const edited = scoreReducer(noteThenRest(), {
+        type: "EDIT_NOTE",
+        payload: {
+          partIndex: 0,
+          noteIndex: 1,
+          changes: { duration: "eighth", pitch: "G", octave: "upper", accented: true },
+        },
+      });
+
+      const rest = edited.parts[0].notes[1];
+      expect(rest).toMatchObject({ type: "rest", duration: "eighth" });
+      expect(rest).not.toHaveProperty("pitch");
+      expect(rest).not.toHaveProperty("octave");
+      expect(rest).not.toHaveProperty("accented");
+    });
+
+    it("leaves a rest alone when the edit carries no duration", () => {
+      const state = noteThenRest();
+      expect(
+        scoreReducer(state, {
+          type: "EDIT_NOTE",
+          payload: { partIndex: 0, noteIndex: 1, changes: { pitch: "G" } },
+        }),
+      ).toBe(state);
+    });
+
+    it("keeps the rest's markers through a duration change", () => {
+      let state = scoreReducer(noteThenRest(), {
+        type: "TOGGLE_SPACE",
+        payload: { partIndex: 0, noteIndex: 1 },
+      });
+      state = scoreReducer(state, {
+        type: "TOGGLE_REPEAT_END",
+        payload: { partIndex: 0, noteIndex: 1 },
+      });
+      const edited = scoreReducer(state, {
+        type: "EDIT_NOTE",
+        payload: { partIndex: 0, noteIndex: 1, changes: { duration: "whole" } },
+      });
+
+      expect(edited.parts[0].notes[1]).toMatchObject({
+        duration: "whole",
+        spaceAfter: true,
+        repeatEnd: true,
+      });
+    });
+  });
 });

@@ -533,4 +533,64 @@ describe("CirclesRenderer", () => {
       expect(signRight).toBeLessThanOrEqual(secondCircleLeft);
     });
   });
+
+  describe("click targets", () => {
+    it("gives a rest a filled hit area, since an unfilled shape is not clickable", () => {
+      const score = makeScore([{ type: "rest", duration: "quarter" }]);
+      const { container } = render(<CirclesRenderer score={score} selection={null} />);
+
+      const group = container.querySelector('[data-testid="rest-symbol-0-0"]')!;
+      const hit = group.querySelector(".symbol-hit-area")!;
+
+      expect(hit).toBeTruthy();
+      expect(hit.getAttribute("fill")).toBe("transparent");
+      // the drawn glyph itself stays unfilled
+      expect(group.querySelector(".rest-symbol")!.getAttribute("fill")).toBe("none");
+    });
+
+    it("covers the whole symbol", () => {
+      const score = makeScore([
+        { type: "note", pitch: "C", octave: "middle", duration: "half" },
+      ]);
+      const { container } = render(<CirclesRenderer score={score} selection={null} />);
+
+      const hit = container.querySelector(".symbol-hit-area")!;
+      const circles = [...container.querySelectorAll(".note-circle")];
+      const leftmost =
+        Number(circles[0].getAttribute("cx")) - Number(circles[0].getAttribute("r"));
+      const rightmost =
+        Number(circles[1].getAttribute("cx")) + Number(circles[1].getAttribute("r"));
+
+      expect(Number(hit.getAttribute("x"))).toBeLessThanOrEqual(leftmost);
+      expect(
+        Number(hit.getAttribute("x")) + Number(hit.getAttribute("width")),
+      ).toBeGreaterThanOrEqual(rightmost);
+    });
+
+    it("widens the target for a narrow sixteenth", () => {
+      const score = makeScore([
+        { type: "note", pitch: "C", octave: "middle", duration: "sixteenth" },
+      ]);
+      const { container } = render(<CirclesRenderer score={score} selection={null} />);
+
+      const hit = container.querySelector(".symbol-hit-area")!;
+      const bar = container.querySelector(".note-circle")!;
+      const barWidth = 40 * 0.18;
+
+      expect(Number(hit.getAttribute("width"))).toBeGreaterThan(barWidth);
+      expect(Number(hit.getAttribute("width"))).toBe(14);
+      expect(bar).toBeTruthy();
+    });
+
+    it("clicking the hit area selects the element", () => {
+      const handleClick = vi.fn();
+      const score = makeScore([{ type: "rest", duration: "quarter" }]);
+      const { container } = render(
+        <CirclesRenderer score={score} selection={null} onNoteClick={handleClick} />,
+      );
+
+      fireEvent.click(container.querySelector(".symbol-hit-area")!);
+      expect(handleClick).toHaveBeenCalledWith(0, 0, expect.anything());
+    });
+  });
 });

@@ -538,4 +538,54 @@ describe("NoteEditor", () => {
       }
     });
   });
+
+  describe("editing a rest", () => {
+    const restScore = () =>
+      makeScore([
+        { type: "note", pitch: "C", octave: "middle", duration: "quarter" },
+        { type: "rest", duration: "quarter" },
+      ]);
+
+    it("changes the rest's duration", () => {
+      renderWithSelection(restScore(), 0, 1);
+
+      const duration = screen.getByLabelText("Duration selector") as HTMLSelectElement;
+      expect(duration.value).toBe("quarter");
+
+      fireEvent.change(duration, { target: { value: "half" } });
+
+      expect(
+        (screen.getByLabelText("Duration selector") as HTMLSelectElement).value,
+      ).toBe("half");
+    });
+
+    it("keeps the duration control enabled for a rest", () => {
+      renderWithSelection(restScore(), 0, 1);
+
+      expect(screen.getByLabelText("Duration selector")).toBeEnabled();
+    });
+
+    it("disables the controls a rest cannot take, rather than leaving them inert", () => {
+      renderWithSelection(restScore(), 0, 1);
+
+      expect(screen.getByLabelText("Set pitch to C - C (Do)")).toBeDisabled();
+      expect(screen.getByLabelText("Octave selector")).toBeDisabled();
+      expect(
+        screen.getByLabelText("Make this note sharp (only C, D, F, G and A have one)"),
+      ).toBeDisabled();
+    });
+
+    it("offers every marker toggle on a rest", () => {
+      renderWithSelection(restScore(), 0, 1);
+
+      for (const label of [
+        "Toggle a grouping gap after this note (spacing only, not a rest)",
+        "Toggle line break after this note",
+        "Start a repeated section before this element",
+        "End a repeated section after this element",
+      ]) {
+        expect(screen.getByLabelText(label)).toBeEnabled();
+      }
+    });
+  });
 });
